@@ -1,5 +1,6 @@
 -- =============================================================================
 -- PHASE 6 — Chi tiêu, completed_at, danh mục sự kiện, post sự kiện, ngày sinh.
+-- IDEMPOTENT: chạy lại nhiều lần không lỗi (guard drop-if-exists + check).
 -- =============================================================================
 
 -- 1) Task: lưu ngày hoàn thành
@@ -24,6 +25,10 @@ create table if not exists public.expenses (
 create index if not exists idx_expenses_date on public.expenses (spent_date desc);
 
 alter table public.expenses enable row level security;
+drop policy if exists "expenses_select_auth" on public.expenses;
+drop policy if exists "expenses_insert_auth" on public.expenses;
+drop policy if exists "expenses_update_auth" on public.expenses;
+drop policy if exists "expenses_delete_auth" on public.expenses;
 create policy "expenses_select_auth" on public.expenses for select to authenticated using (true);
 create policy "expenses_insert_auth" on public.expenses for insert to authenticated with check (true);
 create policy "expenses_update_auth" on public.expenses for update to authenticated using (true) with check (true);
@@ -41,10 +46,24 @@ create table if not exists public.event_posts (
 create index if not exists idx_event_posts_event on public.event_posts (event_id, created_at desc);
 
 alter table public.event_posts enable row level security;
+drop policy if exists "event_posts_select_auth" on public.event_posts;
+drop policy if exists "event_posts_insert_own" on public.event_posts;
+drop policy if exists "event_posts_update_own" on public.event_posts;
+drop policy if exists "event_posts_delete_own" on public.event_posts;
 create policy "event_posts_select_auth" on public.event_posts for select to authenticated using (true);
 create policy "event_posts_insert_own" on public.event_posts for insert to authenticated with check (auth.uid() = author_id);
 create policy "event_posts_update_own" on public.event_posts for update to authenticated using (auth.uid() = author_id) with check (auth.uid() = author_id);
 create policy "event_posts_delete_own" on public.event_posts for delete to authenticated using (auth.uid() = author_id);
 
--- Realtime cho post sự kiện
-alter publication supabase_realtime add table public.event_posts;
+-- Realtime cho post sự kiện (chỉ add nếu chưa có -> tránh lỗi "already member")
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'event_posts'
+  ) then
+    alter publication supabase_realtime add table public.event_posts;
+  end if;
+end $$;
