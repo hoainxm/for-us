@@ -3,39 +3,39 @@ import { addDays, addMonths, addWeeks, endOfDay, isAfter, startOfDay } from "dat
 import { supabase } from "@/lib/supabase";
 import type { RecurrenceRule, Task } from "@/types";
 
-const TASK_COLS = "id, title, priority, tags, recurrence_rule, assigned_to, due_date, is_completed";
+const TASK_COLS =
+  "id, title, priority, tags, recurrence_rule, assigned_to, due_date, is_completed, completed_at";
 
-// --- Auto-rollover (LUẬT 5): is_completed=false AND due_date <= cuối ngày hôm nay ---
-export function useTodoTasks() {
-  return useQuery({
-    queryKey: ["tasks", "todo"],
-    queryFn: async (): Promise<Task[]> => {
-      const endToday = endOfDay(new Date()).toISOString();
-      const { data, error } = await supabase
-        .from("tasks")
-        .select(TASK_COLS)
-        .eq("is_completed", false)
-        .lte("due_date", endToday)
-        .order("due_date", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as Task[];
-    },
-  });
-}
+const dayKey = (d: Date) => startOfDay(d).toISOString();
 
-// --- Việc đã hoàn thành gần đây (hiển thị section "Đã xong") ---
-export function useDoneTasks() {
+// Xem theo NGÀY:
+//  - todo: chưa xong AND due_date <= cuối ngày đang xem (rollover: việc cũ chưa xong vẫn hiện)
+//  - done: đã xong AND completed_at rơi vào chính ngày đang xem
+export function useDayTasks(day: Date) {
   return useQuery({
-    queryKey: ["tasks", "done"],
-    queryFn: async (): Promise<Task[]> => {
-      const { data, error } = await supabase
-        .from("tasks")
-        .select(TASK_COLS)
-        .eq("is_completed", true)
-        .order("due_date", { ascending: false })
-        .limit(20);
-      if (error) throw error;
-      return (data ?? []) as Task[];
+    queryKey: ["tasks", "day", dayKey(day)],
+    queryFn: async (): Promise<{ todo: Task[]; done: Task[] }> => {
+      const end = endOfDay(day).toISOString();
+      const start = startOfDay(day).toISOString();
+
+      const [todoRes, doneRes] = await Promise.all([
+        supabase
+          .from("tasks")
+          .select(TASK_COLS)
+          .eq("is_completed", false)
+          .lte("due_date", end)
+          .order("due_date", { ascending: true }),
+        supabase
+          .from("tasks")
+          .select(TASK_COLS)
+          .eq("is_completed", true)
+          .gte("completed_at", start)
+          .lte("completed_at", end)
+          .order("completed_at", { ascending: false }),
+      ]);
+      if (todoRes.error) throw todoRes.error;
+      if (doneRes.error) throw doneRes.error;
+      return { todo: (todoRes.data ?? []) as Task[], done: (doneRes.data ?? []) as Task[] };
     },
   });
 }
@@ -56,7 +56,6 @@ export function useTask(id: string | undefined) {
   });
 }
 
-// Tịnh tiến due_date cho task định kỳ, nhảy qua hôm nay để không trôi lại ngay.
 function nextDueDate(base: Date, rule: RecurrenceRule): Date {
   const today = startOfDay(new Date());
   const step =
@@ -70,14 +69,14 @@ function nextDueDate(base: Date, rule: RecurrenceRule): Date {
   return d;
 }
 
-// --- Done task + tự đẻ task mới nếu Recurring (LUẬT 6) ---
+// Done: lưu completed_at = bây giờ (LUẬT 6 recurring vẫn tự đẻ).
 export function useCompleteTask() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (task: Task) => {
       const { error } = await supabase
         .from("tasks")
-        .update({ is_completed: true })
+        .update({ is_completed: true, completed_at: new Date().toISOString() })
         .eq("id", task.id);
       if (error) throw error;
 
@@ -86,7 +85,6 @@ export function useCompleteTask() {
         const next = nextDueDate(new Date(task.due_date), task.recurrence_rule);
         const { error: insErr } = await supabase.from("tasks").insert({
           title: task.title,
-          priority: task.priority,
           tags: task.tags,
           recurrence_rule: task.recurrence_rule,
           assigned_to: task.assigned_to,
@@ -102,14 +100,13 @@ export function useCompleteTask() {
   });
 }
 
-// Bỏ hoàn thành (không đẻ task mới).
 export function useUncompleteTask() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from("tasks")
-        .update({ is_completed: false })
+        .update({ is_completed: false, completed_at: null })
         .eq("id", id);
       if (error) throw error;
     },
@@ -119,7 +116,6 @@ export function useUncompleteTask() {
 
 export interface NewTaskInput {
   title: string;
-  priority: Task["priority"];
   tags: string[];
   recurrence_rule: RecurrenceRule | null;
   assigned_to: string;

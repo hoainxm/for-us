@@ -9,6 +9,7 @@ export interface Profile {
   id: string;
   display_name: string;
   avatar_url: string | null;
+  birthday?: string | null; // date
 }
 
 export interface Task {
@@ -20,6 +21,7 @@ export interface Task {
   assigned_to: string; // profile id
   due_date: string; // ISO
   is_completed: boolean;
+  completed_at?: string | null; // ISO — ngày done
 }
 
 export interface TaskComment {
@@ -59,4 +61,24 @@ export interface CoupleEvent {
   title: string;
   event_date: string; // date
   type: EventType;
+  category?: string | null;
+}
+
+export interface EventPost {
+  id: string;
+  event_id: string;
+  author_id: string;
+  content: string;
+  images: string[];
+  created_at: string;
+}
+
+export interface Expense {
+  id: string;
+  amount: number;
+  category: string;
+  note: string | null;
+  paid_by: string | null;
+  spent_date: string; // date
+  created_at: string;
 }

@@ -8,7 +8,10 @@ import TaskDetailPage from "@/pages/TaskDetailPage";
 import NotesPage from "@/pages/NotesPage";
 import NoteDetailPage from "@/pages/NoteDetailPage";
 import EventsPage from "@/pages/EventsPage";
+import EventDetailPage from "@/pages/EventDetailPage";
+import ExpensesPage from "@/pages/ExpensesPage";
 import ProfilePage from "@/pages/ProfilePage";
+import ChangePasswordPage from "@/pages/ChangePasswordPage";
 import CreatePage from "@/pages/CreatePage";
 
 function Splash() {
@@ -45,12 +48,15 @@ export default function App() {
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/notes" element={<NotesPage />} />
         <Route path="/events" element={<EventsPage />} />
+        <Route path="/expenses" element={<ExpensesPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
 
-      {/* Chi tiết việc / nhật ký: full screen, không có Bottom Nav */}
+      {/* Chi tiết: full screen, không có Bottom Nav */}
       <Route path="/tasks/:id" element={<TaskDetailPage />} />
       <Route path="/notes/:id" element={<NoteDetailPage />} />
+      <Route path="/events/:id" element={<EventDetailPage />} />
+      <Route path="/change-password" element={<ChangePasswordPage />} />
 
       {/* Màn Tạo mới: full screen, không có Bottom Nav */}
       <Route

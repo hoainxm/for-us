@@ -1,30 +1,36 @@
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Bell,
+  Cake,
   Camera,
   Check,
   ChevronRight,
   Download,
   Heart,
+  KeyRound,
   Loader2,
   LogOut,
+  Monitor,
   Moon,
-  Palette,
   Pencil,
   Send,
   Share,
-  ShieldCheck,
+  Sun,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/AuthProvider";
+import { useTheme, type ThemeMode } from "@/providers/ThemeProvider";
 import {
   useMyProfile,
   useProfiles,
+  useUpdateBirthday,
   useUpdateDisplayName,
   useUploadAvatar,
 } from "@/hooks/useProfile";
@@ -32,12 +38,15 @@ import { useInstallPrompt } from "@/pwa/useInstallPrompt";
 import { usePush } from "@/hooks/usePush";
 
 export default function ProfilePage() {
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { data: me, isLoading } = useMyProfile(user?.id);
   const { data: profiles } = useProfiles();
   const partner = profiles?.find((p) => p.id !== user?.id);
+  const theme = useTheme();
 
   const updateName = useUpdateDisplayName(user?.id);
+  const updateBirthday = useUpdateBirthday(user?.id);
   const uploadAvatar = useUploadAvatar(user?.id);
   const fileRef = useRef<HTMLInputElement>(null);
   const install = useInstallPrompt();
@@ -45,6 +54,17 @@ export default function ProfilePage() {
 
   const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
+
+  const saveBirthday = (value: string) => {
+    if (!value) return;
+    updateBirthday.mutate(
+      { birthday: value, displayName: me?.display_name || "Bạn" },
+      {
+        onSuccess: () => toast.success("Đã lưu ngày sinh + tạo sự kiện sinh nhật 🎂"),
+        onError: (e) => toast.error("Lỗi lưu", { description: (e as Error).message }),
+      },
+    );
+  };
 
   const startEdit = () => {
     setNameDraft(me?.display_name ?? "");
@@ -124,14 +144,18 @@ export default function ProfilePage() {
   }[] = [
     { icon: Bell, label: "Thông báo", hint: "Bật", onClick: enableNotifications },
     { icon: Send, label: "Gửi thử thông báo", onClick: testPush },
-    { icon: Palette, label: "Giao diện", hint: "Hồng" },
-    { icon: Moon, label: "Chế độ tối", hint: "Tự động" },
-    { icon: ShieldCheck, label: "Bảo mật & riêng tư" },
+    { icon: KeyRound, label: "Đổi mật khẩu", onClick: () => navigate("/change-password") },
+  ];
+
+  const themeOptions: { key: ThemeMode; label: string; icon: typeof Sun }[] = [
+    { key: "light", label: "Sáng", icon: Sun },
+    { key: "dark", label: "Tối", icon: Moon },
+    { key: "system", label: "Theo máy", icon: Monitor },
   ];
 
   return (
     <div>
-      <PageHeader title="Cá nhân" />
+      <PageHeader title="Cá nhân" avatar={false} />
 
       <div className="space-y-5 p-4">
         {/* Cặp đôi card */}
@@ -224,6 +248,43 @@ export default function ProfilePage() {
             )}
           </Card>
         )}
+
+        {/* Ngày sinh -> tự tạo sự kiện sinh nhật */}
+        <Card className="flex items-center gap-3 p-4">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+            <Cake className="size-5" />
+          </div>
+          <span className="flex-1 font-medium">Ngày sinh</span>
+          {updateBirthday.isPending && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
+          <input
+            type="date"
+            defaultValue={me?.birthday ?? ""}
+            onChange={(e) => saveBirthday(e.target.value)}
+            className="rounded-lg border border-input bg-card px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+          />
+        </Card>
+
+        {/* Chế độ tối */}
+        <Card className="space-y-2 p-4">
+          <span className="text-sm font-medium text-muted-foreground">Chế độ hiển thị</span>
+          <div className="grid grid-cols-3 gap-2">
+            {themeOptions.map((o) => (
+              <button
+                key={o.key}
+                onClick={() => theme.setMode(o.key)}
+                className={cn(
+                  "active-press flex flex-col items-center gap-1 rounded-xl border-2 py-2.5 transition-colors",
+                  theme.mode === o.key
+                    ? "border-primary bg-primary/8 text-primary"
+                    : "border-border text-muted-foreground",
+                )}
+              >
+                <o.icon className="size-5" />
+                <span className="text-xs font-medium">{o.label}</span>
+              </button>
+            ))}
+          </div>
+        </Card>
 
         {/* Settings list */}
         <Card className="divide-y divide-border/60 p-0">

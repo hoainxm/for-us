@@ -41,13 +41,19 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="mx-auto flex h-dvh w-full max-w-md flex-col justify-center bg-background px-6">
-      <div className="animate-page flex flex-col items-center gap-2 pb-8">
-        <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/12">
-          <Heart className="size-8 fill-primary text-primary" />
+    <div className="relative mx-auto flex h-dvh w-full max-w-md flex-col justify-center overflow-hidden px-6">
+      {/* Nền gradient hồng dịu, đỡ chói */}
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-primary/25 via-background to-background dark:from-primary/20" />
+      <div
+        className="pointer-events-none absolute -top-24 left-1/2 -z-10 size-72 -translate-x-1/2 rounded-full bg-primary/25 blur-3xl"
+        aria-hidden
+      />
+
+      <div className="animate-page flex flex-col items-center gap-3 pb-10">
+        <div className="flex size-20 items-center justify-center rounded-3xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
+          <Heart className="size-10 fill-current" />
         </div>
-        <h1 className="text-2xl font-bold">For Us</h1>
-        <p className="text-sm text-muted-foreground">Đăng nhập để bắt đầu</p>
+        <h1 className="text-3xl font-bold tracking-tight">For Us</h1>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="animate-page space-y-4">
@@ -85,10 +91,6 @@ export default function LoginPage() {
           {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
         </Button>
       </form>
-
-      <p className="animate-page pt-6 text-center text-xs text-muted-foreground">
-        Tài khoản do Admin cấp sẵn cho 2 người.
-      </p>
     </div>
   );
 }

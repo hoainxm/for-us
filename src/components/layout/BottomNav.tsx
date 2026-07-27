@@ -1,12 +1,12 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { CalendarHeart, CheckSquare, NotebookPen, Plus, User } from "lucide-react";
+import { CalendarHeart, CheckSquare, NotebookPen, Plus, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { to: "/tasks", label: "Việc", icon: CheckSquare },
   { to: "/notes", label: "Nhật ký", icon: NotebookPen },
   { to: "/events", label: "Sự kiện", icon: CalendarHeart },
-  { to: "/profile", label: "Cá nhân", icon: User },
+  { to: "/expenses", label: "Chi tiêu", icon: Wallet },
 ] as const;
 
 export function BottomNav() {

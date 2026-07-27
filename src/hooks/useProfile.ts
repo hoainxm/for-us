@@ -9,7 +9,7 @@ export function useProfiles() {
     queryFn: async (): Promise<Profile[]> => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url")
+        .select("id, display_name, avatar_url, birthday")
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data ?? [];
@@ -25,7 +25,7 @@ export function useMyProfile(userId: string | undefined) {
     queryFn: async (): Promise<Profile | null> => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url")
+        .select("id, display_name, avatar_url, birthday")
         .eq("id", userId!)
         .maybeSingle();
       if (error) throw error;
@@ -48,6 +48,46 @@ export function useUpdateDisplayName(userId: string | undefined) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["profile", userId] });
       qc.invalidateQueries({ queryKey: ["profiles"] });
+    },
+  });
+}
+
+// Cập nhật ngày sinh + tự đồng bộ sự kiện "Sinh nhật {tên}" (đếm ngược, lặp năm).
+export function useUpdateBirthday(userId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { birthday: string; displayName: string }) => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ birthday: params.birthday })
+        .eq("id", userId!);
+      if (error) throw error;
+
+      const title = `Sinh nhật ${params.displayName}`;
+      // Xoá sự kiện sinh nhật cũ của người này (match theo title) rồi tạo lại.
+      await supabase.from("events").delete().eq("category", "Sinh nhật").eq("title", title);
+      const { error: evErr } = await supabase.from("events").insert({
+        title,
+        event_date: params.birthday,
+        type: "countdown",
+        category: "Sinh nhật",
+      });
+      if (evErr) throw evErr;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["profile", userId] });
+      qc.invalidateQueries({ queryKey: ["profiles"] });
+      qc.invalidateQueries({ queryKey: ["events"] });
+    },
+  });
+}
+
+// Đổi mật khẩu (Supabase Auth).
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: async (newPassword: string) => {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
     },
   });
 }

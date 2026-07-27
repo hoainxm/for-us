@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { format, formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
-import { ArrowLeft, CalendarClock, Flame, Loader2, Repeat, Send } from "lucide-react";
+import { ArrowLeft, CalendarClock, Loader2, Repeat, Send } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
@@ -16,9 +16,7 @@ import { useProfiles } from "@/hooks/useProfile";
 import { useTask } from "@/hooks/useTasks";
 import { useAddComment, useTaskComments } from "@/hooks/useTaskComments";
 import { usePush } from "@/hooks/usePush";
-import type { Priority } from "@/types";
 
-const priorityLabel: Record<Priority, string> = { high: "Cao", medium: "Vừa", low: "Thấp" };
 const recurrenceLabel: Record<string, string> = {
   daily: "Hằng ngày",
   weekly: "Hằng tuần",
@@ -95,10 +93,6 @@ export default function TaskDetailPage() {
           <Card className="space-y-3 p-4">
             <h2 className="text-lg font-bold leading-snug">{task.data.title}</h2>
             <div className="flex flex-wrap gap-1.5">
-              <Badge variant={task.data.priority}>
-                {task.data.priority === "high" && <Flame className="size-3" />}
-                {priorityLabel[task.data.priority]}
-              </Badge>
               {task.data.tags.map((t) => (
                 <Badge key={t} variant="secondary">
                   {t}

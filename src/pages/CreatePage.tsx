@@ -5,6 +5,7 @@ import {
   CheckSquare,
   NotebookPen,
   CalendarHeart,
+  Wallet,
   X,
   ImagePlus,
   Loader2,
@@ -19,22 +20,25 @@ import { useProfiles } from "@/hooks/useProfile";
 import { useCreateTask } from "@/hooks/useTasks";
 import { useAlbums, useCreateAlbum, useCreateNote } from "@/hooks/useNotes";
 import { useCreateEvent } from "@/hooks/useEvents";
+import { useCreateExpense } from "@/hooks/useExpenses";
 import { usePush } from "@/hooks/usePush";
-import type { EventType, Priority, RecurrenceRule } from "@/types";
+import {
+  EVENT_CATEGORIES,
+  EXPENSE_CATEGORIES,
+  NOTE_IMAGE_LIMIT,
+  TASK_TAGS,
+} from "@/lib/constants";
+import type { EventType, RecurrenceRule } from "@/types";
 
-type Mode = "task" | "note" | "event";
+type Mode = "task" | "note" | "event" | "expense";
 
 const modes = [
-  { key: "task", label: "Công việc", icon: CheckSquare },
+  { key: "task", label: "Việc", icon: CheckSquare },
   { key: "note", label: "Nhật ký", icon: NotebookPen },
   { key: "event", label: "Sự kiện", icon: CalendarHeart },
+  { key: "expense", label: "Chi tiêu", icon: Wallet },
 ] as const;
 
-const priorities: { key: Priority; label: string }[] = [
-  { key: "high", label: "Cao" },
-  { key: "medium", label: "Vừa" },
-  { key: "low", label: "Thấp" },
-];
 const recurrences: { key: RecurrenceRule | "none"; label: string }[] = [
   { key: "none", label: "Không" },
   { key: "daily", label: "Ngày" },
@@ -63,17 +67,17 @@ export default function CreatePage() {
   const createNote = useCreateNote();
   const createAlbum = useCreateAlbum();
   const createEvent = useCreateEvent();
+  const createExpense = useCreateExpense();
   const push = usePush();
 
   const [mode, setMode] = useState<Mode>("task");
   const [text, setText] = useState("");
 
   // task
-  const [priority, setPriority] = useState<Priority>("medium");
   const [assignee, setAssignee] = useState<string | null>(null);
   const [due, setDue] = useState(defaultDue);
   const [recurrence, setRecurrence] = useState<RecurrenceRule | "none">("none");
-  const [tagsRaw, setTagsRaw] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
 
   // note
   const [files, setFiles] = useState<File[]>([]);
@@ -84,19 +88,32 @@ export default function CreatePage() {
   // event
   const [eventDate, setEventDate] = useState(todayDate);
   const [eventType, setEventType] = useState<EventType>("countdown");
+  const [eventCategory, setEventCategory] = useState<string>(EVENT_CATEGORIES[0]);
+
+  // expense
+  const [amount, setAmount] = useState("");
+  const [expenseCategory, setExpenseCategory] = useState<string>(EXPENSE_CATEGORIES[0]);
+  const [paidBy, setPaidBy] = useState<string | null>(null);
+  const [spentDate, setSpentDate] = useState(todayDate);
 
   const effectiveAssignee = assignee ?? user?.id ?? "";
+  const effectivePayer = paidBy ?? user?.id ?? null;
   const busy =
-    createTask.isPending || createNote.isPending || createEvent.isPending;
+    createTask.isPending ||
+    createNote.isPending ||
+    createEvent.isPending ||
+    createExpense.isPending;
+
+  const toggleTag = (tag: string) =>
+    setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
 
   const onPickFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(e.target.files ?? []);
-    const tooBig = picked.find((f) => f.size > 5 * 1024 * 1024);
-    if (tooBig) {
+    if (picked.some((f) => f.size > 5 * 1024 * 1024)) {
       toast.error("Mỗi ảnh tối đa 5MB");
       return;
     }
-    setFiles((prev) => [...prev, ...picked].slice(0, 4));
+    setFiles((prev) => [...prev, ...picked].slice(0, NOTE_IMAGE_LIMIT));
     e.target.value = "";
   };
 
@@ -121,8 +138,7 @@ export default function CreatePage() {
       createTask.mutate(
         {
           title: text.trim(),
-          priority,
-          tags: tagsRaw.split(",").map((t) => t.trim()).filter(Boolean),
+          tags,
           recurrence_rule: recurrence === "none" ? null : recurrence,
           assigned_to: effectiveAssignee,
           due_date: new Date(due).toISOString(),
@@ -130,12 +146,7 @@ export default function CreatePage() {
         {
           onSuccess: () => {
             toast.success("Đã tạo việc ✅");
-            // Báo cho người được giao (nếu không phải mình)
-            push.notify(effectiveAssignee, {
-              title: "Việc mới 📋",
-              body: text.trim(),
-              url: "/tasks",
-            });
+            push.notify(effectiveAssignee, { title: "Việc mới 📋", body: text.trim(), url: "/tasks" });
             navigate("/tasks");
           },
           onError: (e) => toast.error("Lỗi", { description: (e as Error).message }),
@@ -145,8 +156,7 @@ export default function CreatePage() {
     }
 
     if (mode === "note") {
-      if (!text.trim() && files.length === 0)
-        return toast.error("Viết gì đó hoặc thêm ảnh nha");
+      if (!text.trim() && files.length === 0) return toast.error("Viết gì đó hoặc thêm ảnh nha");
       createNote.mutate(
         { content: text.trim(), albumId, files, authorId: user.id },
         {
@@ -165,19 +175,43 @@ export default function CreatePage() {
       return;
     }
 
-    // event
-    if (!text.trim()) return toast.error("Nhập tên sự kiện");
-    createEvent.mutate(
-      { title: text.trim(), event_date: eventDate, type: eventType },
+    if (mode === "event") {
+      if (!text.trim()) return toast.error("Nhập tên sự kiện");
+      createEvent.mutate(
+        { title: text.trim(), event_date: eventDate, type: eventType, category: eventCategory },
+        {
+          onSuccess: () => {
+            toast.success("Đã thêm sự kiện 💗");
+            navigate("/events");
+          },
+          onError: (e) => toast.error("Lỗi", { description: (e as Error).message }),
+        },
+      );
+      return;
+    }
+
+    // expense
+    const value = Number(amount.replace(/[^\d]/g, ""));
+    if (!value) return toast.error("Nhập số tiền");
+    createExpense.mutate(
+      {
+        amount: value,
+        category: expenseCategory,
+        note: text.trim() || null,
+        paid_by: effectivePayer,
+        spent_date: spentDate,
+      },
       {
         onSuccess: () => {
-          toast.success("Đã thêm sự kiện 💗");
-          navigate("/events");
+          toast.success("Đã ghi chi tiêu 💸");
+          navigate("/expenses");
         },
         onError: (e) => toast.error("Lỗi", { description: (e as Error).message }),
       },
     );
   };
+
+  const showTitleBox = mode !== "expense";
 
   return (
     <div className="flex min-h-full flex-col">
@@ -197,7 +231,7 @@ export default function CreatePage() {
 
       <div className="space-y-5 p-4">
         {/* Mode switcher */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {modes.map((m) => (
             <button
               key={m.key}
@@ -209,38 +243,31 @@ export default function CreatePage() {
                   : "border-border text-muted-foreground",
               )}
             >
-              <m.icon className="size-6" />
-              <span className="text-xs font-medium">{m.label}</span>
+              <m.icon className="size-5" />
+              <span className="text-[11px] font-medium">{m.label}</span>
             </button>
           ))}
         </div>
 
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={mode === "note" ? 5 : 2}
-          placeholder={
-            mode === "task"
-              ? "Việc cần làm là gì?"
-              : mode === "note"
-                ? "Hôm nay có gì muốn ghi lại..."
-                : "Tên sự kiện (VD: Kỷ niệm 2 năm)"
-          }
-          className="w-full resize-none rounded-xl border border-input bg-card p-4 text-base outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
-        />
+        {showTitleBox && (
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={mode === "note" ? 5 : 2}
+            placeholder={
+              mode === "task"
+                ? "Việc cần làm là gì?"
+                : mode === "note"
+                  ? "Hôm nay có gì muốn ghi lại..."
+                  : "Tên sự kiện (VD: Kỷ niệm 2 năm)"
+            }
+            className="w-full resize-none rounded-xl border border-input bg-card p-4 text-base outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"
+          />
+        )}
 
         {/* ===== TASK ===== */}
         {mode === "task" && (
           <Card className="space-y-4 p-4">
-            <Field label="Ưu tiên">
-              <div className="flex gap-2">
-                {priorities.map((p) => (
-                  <Chip key={p.key} active={priority === p.key} onClick={() => setPriority(p.key)}>
-                    {p.label}
-                  </Chip>
-                ))}
-              </div>
-            </Field>
             <Field label="Giao cho">
               <div className="flex gap-2">
                 {profiles?.map((p) => (
@@ -267,13 +294,14 @@ export default function CreatePage() {
                 ))}
               </div>
             </Field>
-            <Field label="Nhãn (phân tách bằng dấu phẩy)">
-              <Input
-                value={tagsRaw}
-                onChange={(e) => setTagsRaw(e.target.value)}
-                placeholder="Đi chợ, Nhà cửa"
-                className="h-11 text-sm"
-              />
+            <Field label="Nhãn">
+              <div className="flex flex-wrap gap-2">
+                {TASK_TAGS.map((t) => (
+                  <Chip key={t} active={tags.includes(t)} onClick={() => toggleTag(t)}>
+                    {t}
+                  </Chip>
+                ))}
+              </div>
             </Field>
           </Card>
         )}
@@ -281,15 +309,11 @@ export default function CreatePage() {
         {/* ===== NOTE ===== */}
         {mode === "note" && (
           <Card className="space-y-4 p-4">
-            <Field label="Ảnh (tối đa 4)">
+            <Field label={`Ảnh (tối đa ${NOTE_IMAGE_LIMIT})`}>
               <div className="grid grid-cols-4 gap-2">
                 {files.map((f, i) => (
                   <div key={i} className="relative aspect-square">
-                    <img
-                      src={URL.createObjectURL(f)}
-                      alt="preview"
-                      className="size-full rounded-lg object-cover"
-                    />
+                    <img src={URL.createObjectURL(f)} alt="preview" className="size-full rounded-lg object-cover" />
                     <button
                       onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
                       className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
@@ -299,7 +323,7 @@ export default function CreatePage() {
                     </button>
                   </div>
                 ))}
-                {files.length < 4 && (
+                {files.length < NOTE_IMAGE_LIMIT && (
                   <button
                     onClick={() => fileRef.current?.click()}
                     className="active-press flex aspect-square items-center justify-center rounded-lg border-2 border-dashed border-border text-muted-foreground"
@@ -365,6 +389,64 @@ export default function CreatePage() {
                   Đếm tiến (kỷ niệm)
                 </Chip>
               </div>
+            </Field>
+            <Field label="Danh mục">
+              <div className="flex flex-wrap gap-2">
+                {EVENT_CATEGORIES.map((c) => (
+                  <Chip key={c} active={eventCategory === c} onClick={() => setEventCategory(c)}>
+                    {c}
+                  </Chip>
+                ))}
+              </div>
+            </Field>
+          </Card>
+        )}
+
+        {/* ===== EXPENSE ===== */}
+        {mode === "expense" && (
+          <Card className="space-y-4 p-4">
+            <Field label="Số tiền (đ)">
+              <Input
+                value={amount}
+                onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))}
+                inputMode="numeric"
+                placeholder="0"
+                className="h-12 text-lg font-semibold"
+              />
+            </Field>
+            <Field label="Danh mục">
+              <div className="flex flex-wrap gap-2">
+                {EXPENSE_CATEGORIES.map((c) => (
+                  <Chip key={c} active={expenseCategory === c} onClick={() => setExpenseCategory(c)}>
+                    {c}
+                  </Chip>
+                ))}
+              </div>
+            </Field>
+            <Field label="Người trả">
+              <div className="flex gap-2">
+                {profiles?.map((p) => (
+                  <Chip key={p.id} active={effectivePayer === p.id} onClick={() => setPaidBy(p.id)}>
+                    {p.display_name}
+                  </Chip>
+                ))}
+              </div>
+            </Field>
+            <Field label="Ngày">
+              <input
+                type="date"
+                value={spentDate}
+                onChange={(e) => setSpentDate(e.target.value)}
+                className="h-11 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+              />
+            </Field>
+            <Field label="Ghi chú">
+              <Input
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="VD: cà phê cuối tuần"
+                className="h-11 text-sm"
+              />
             </Field>
           </Card>
         )}

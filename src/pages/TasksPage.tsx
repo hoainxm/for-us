@@ -1,22 +1,23 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { isBefore, startOfDay } from "date-fns";
-import { Repeat, Flame, RotateCcw, ChevronRight, Check } from "lucide-react";
+import { format, isBefore, isToday, startOfDay } from "date-fns";
+import { vi } from "date-fns/locale";
+import { Repeat, RotateCcw, ChevronRight, Check } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { SwipeableRow } from "@/components/tasks/SwipeableRow";
+import { DateStrip } from "@/components/tasks/DateStrip";
 import {
   useCompleteTask,
-  useDoneTasks,
-  useTodoTasks,
+  useDayTasks,
   useUncompleteTask,
 } from "@/hooks/useTasks";
 import { useProfiles } from "@/hooks/useProfile";
-import type { Priority, Task } from "@/types";
+import type { Task } from "@/types";
 
-const priorityLabel: Record<Priority, string> = { high: "Cao", medium: "Vừa", low: "Thấp" };
 const recurrenceLabel: Record<string, string> = {
   daily: "Hằng ngày",
   weekly: "Hằng tuần",
@@ -25,13 +26,16 @@ const recurrenceLabel: Record<string, string> = {
 
 export default function TasksPage() {
   const navigate = useNavigate();
-  const todo = useTodoTasks();
-  const done = useDoneTasks();
+  const [day, setDay] = useState<Date>(() => startOfDay(new Date()));
+  const q = useDayTasks(day);
   const { data: profiles } = useProfiles();
   const complete = useCompleteTask();
   const uncomplete = useUncompleteTask();
 
   const nameOf = (id: string) => profiles?.find((p) => p.id === id);
+  const dayLabel = isToday(day)
+    ? "Hôm nay"
+    : format(day, "EEEE, dd/MM", { locale: vi });
 
   const onComplete = (task: Task) =>
     complete.mutate(task, {
@@ -42,28 +46,25 @@ export default function TasksPage() {
       onError: (e) => toast.error("Lỗi", { description: (e as Error).message }),
     });
 
+  const todo = q.data?.todo ?? [];
+  const done = q.data?.done ?? [];
+
   return (
     <div>
-      <PageHeader
-        title="Công việc"
-        subtitle={
-          todo.isLoading
-            ? "Đang tải..."
-            : `${todo.data?.length ?? 0} việc cần làm hôm nay`
-        }
-      />
+      <PageHeader title="Công việc" subtitle={dayLabel} />
+      <DateStrip value={day} onChange={(d) => setDay(startOfDay(d))} />
 
-      <div className="space-y-6 p-4">
+      <div className="space-y-6 p-4 pt-1">
         {/* TODO */}
         <section className="space-y-3">
-          {todo.isLoading && <SkeletonList />}
-          {todo.isError && (
-            <ErrorBox message={(todo.error as Error).message} onRetry={() => todo.refetch()} />
+          {q.isLoading && <SkeletonList />}
+          {q.isError && (
+            <ErrorBox message={(q.error as Error).message} onRetry={() => q.refetch()} />
           )}
-          {todo.data && todo.data.length === 0 && <EmptyState />}
+          {q.data && todo.length === 0 && <EmptyTodo isToday={isToday(day)} />}
 
           <div className="stagger space-y-3">
-            {todo.data?.map((t) => (
+            {todo.map((t) => (
               <SwipeableRow
                 key={t.id}
                 onComplete={() => onComplete(t)}
@@ -74,18 +75,20 @@ export default function TasksPage() {
             ))}
           </div>
 
-          <p className="px-1 text-center text-xs text-muted-foreground">
-            Quẹt phải để hoàn thành · chạm để xem chi tiết
-          </p>
+          {todo.length > 0 && (
+            <p className="px-1 text-center text-xs text-muted-foreground">
+              Quẹt phải để hoàn thành · chạm để xem chi tiết
+            </p>
+          )}
         </section>
 
-        {/* DONE */}
-        {done.data && done.data.length > 0 && (
+        {/* DONE trong ngày */}
+        {done.length > 0 && (
           <section className="space-y-3">
             <h2 className="px-1 text-sm font-semibold text-muted-foreground">
-              Đã xong ({done.data.length})
+              Đã xong {isToday(day) ? "hôm nay" : "ngày này"} ({done.length})
             </h2>
-            {done.data.map((t) => (
+            {done.map((t) => (
               <Card key={t.id} className="flex items-center gap-3 p-3 opacity-60">
                 <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-success text-white">
                   <Check className="size-4" strokeWidth={3} />
@@ -95,6 +98,11 @@ export default function TasksPage() {
                   className="min-w-0 flex-1 text-left"
                 >
                   <p className="truncate font-medium line-through">{t.title}</p>
+                  {t.completed_at && (
+                    <p className="text-[11px] text-muted-foreground">
+                      Xong lúc {format(new Date(t.completed_at), "HH:mm")}
+                    </p>
+                  )}
                 </button>
                 <button
                   onClick={() => uncomplete.mutate(t.id)}
@@ -112,7 +120,13 @@ export default function TasksPage() {
   );
 }
 
-function TaskCard({ task, assignee }: { task: Task; assignee?: { display_name: string; avatar_url: string | null } }) {
+function TaskCard({
+  task,
+  assignee,
+}: {
+  task: Task;
+  assignee?: { display_name: string; avatar_url: string | null };
+}) {
   const overdue = isBefore(startOfDay(new Date(task.due_date)), startOfDay(new Date()));
 
   return (
@@ -120,10 +134,6 @@ function TaskCard({ task, assignee }: { task: Task; assignee?: { display_name: s
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium">{task.title}</p>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          <Badge variant={task.priority}>
-            {task.priority === "high" && <Flame className="size-3" />}
-            {priorityLabel[task.priority]}
-          </Badge>
           {task.tags.map((tag) => (
             <Badge key={tag} variant="secondary">
               {tag}
@@ -154,13 +164,13 @@ function SkeletonList() {
   );
 }
 
-function EmptyState() {
+function EmptyTodo({ isToday }: { isToday: boolean }) {
   return (
-    <div className="flex flex-col items-center gap-2 py-16 text-center">
+    <div className="flex flex-col items-center gap-2 py-14 text-center">
       <div className="flex size-16 items-center justify-center rounded-full bg-success/12">
         <Check className="size-8 text-success" />
       </div>
-      <p className="font-medium">Hết việc rồi 🎉</p>
+      <p className="font-medium">{isToday ? "Hết việc rồi 🎉" : "Không có việc tồn"}</p>
       <p className="text-sm text-muted-foreground">Cả hai nghỉ ngơi thôi.</p>
     </div>
   );
