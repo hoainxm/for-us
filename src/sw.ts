@@ -19,7 +19,7 @@ self.addEventListener("push", (event) => {
   } catch {
     data = { body: event.data?.text() };
   }
-  const title = data.title ?? "Couple App 💕";
+  const title = data.title ?? "For Us 💕";
   event.waitUntil(
     self.registration.showNotification(title, {
       body: data.body ?? "",

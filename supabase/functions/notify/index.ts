@@ -17,7 +17,7 @@ const json = (status: number, data: unknown) =>
   });
 
 webpush.setVapidDetails(
-  Deno.env.get("VAPID_SUBJECT") ?? "mailto:admin@couple.app",
+  Deno.env.get("VAPID_SUBJECT") ?? "mailto:admin@for-us.app",
   Deno.env.get("VAPID_PUBLIC_KEY")!,
   Deno.env.get("VAPID_PRIVATE_KEY")!,
 );
@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
   if (error) return json(500, { error: error.message });
   if (!subs || subs.length === 0) return json(200, { sent: 0, note: "no subscriptions" });
 
-  const payload = JSON.stringify({ title: title ?? "Couple App 💕", body: body ?? "", url: url ?? "/" });
+  const payload = JSON.stringify({ title: title ?? "For Us 💕", body: body ?? "", url: url ?? "/" });
 
   const results = await Promise.allSettled(
     subs.map((s) =>

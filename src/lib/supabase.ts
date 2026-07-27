@@ -5,7 +5,7 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 if (!url || !anonKey) {
   throw new Error(
-    "[Couple App] Thiếu biến môi trường Supabase. Tạo file .env (copy từ .env.example) và điền VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY.",
+    "[For Us] Thiếu biến môi trường Supabase. Tạo file .env (copy từ .env.example) và điền VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY.",
   );
 }
 

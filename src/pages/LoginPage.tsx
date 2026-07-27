@@ -46,7 +46,7 @@ export default function LoginPage() {
         <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/12">
           <Heart className="size-8 fill-primary text-primary" />
         </div>
-        <h1 className="text-2xl font-bold">Couple App</h1>
+        <h1 className="text-2xl font-bold">For Us</h1>
         <p className="text-sm text-muted-foreground">Đăng nhập để bắt đầu</p>
       </div>
 
@@ -58,7 +58,7 @@ export default function LoginPage() {
             type="email"
             inputMode="email"
             autoComplete="email"
-            placeholder="ban@email.com"
+            placeholder="email@email.com"
             {...register("email")}
           />
           {errors.email && (

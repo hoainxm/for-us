@@ -18,8 +18,8 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
       },
       manifest: {
-        name: "Couple App",
-        short_name: "Couple",
+        name: "For Us",
+        short_name: "For Us",
         description: "Quản lý công việc & nhật ký chia sẻ cho hai người.",
         lang: "vi",
         theme_color: "#e11d64",

@@ -41,7 +41,7 @@ export function usePush() {
     }
     if (!sub) {
       // Không có VAPID key -> vẫn cho local notification, nhưng không push server được.
-      await showLocalNotification("Couple App 💕", "Đã bật thông báo (chưa cấu hình push server).");
+      await showLocalNotification("For Us 💕", "Đã bật thông báo (chưa cấu hình push server).");
       return "no-vapid";
     }
 
@@ -55,7 +55,7 @@ export function usePush() {
       });
       if (error) throw error;
     }
-    await showLocalNotification("Couple App 💕", "Đã bật thông báo đẩy thành công!");
+    await showLocalNotification("For Us 💕", "Đã bật thông báo đẩy thành công!");
     return "ok";
   };
 

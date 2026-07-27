@@ -134,7 +134,7 @@ export default function ProfilePage() {
       <PageHeader title="Cá nhân" />
 
       <div className="space-y-5 p-4">
-        {/* Couple card */}
+        {/* Cặp đôi card */}
         <Card className="flex flex-col items-center gap-3 bg-gradient-to-br from-accent to-card p-6">
           <div className="flex items-center gap-3">
             <button
@@ -255,7 +255,7 @@ export default function ProfilePage() {
           Đăng xuất
         </Button>
 
-        <p className="text-center text-xs text-muted-foreground">Couple App · v1.0.0</p>
+        <p className="text-center text-xs text-muted-foreground">For Us · v1.0.0</p>
       </div>
     </div>
   );

@@ -24,15 +24,15 @@ npm run preview   # mở http://localhost:4173
 
 ## Cấu trúc
 
-| Thư mục | Nội dung |
-|---|---|
-| `supabase/migrations/` | SQL schema (7 bảng + 2 bucket + RLS) |
-| `src/lib/` | `supabase.ts`, `queryClient.ts` |
-| `src/providers/` | `AuthProvider` (session) |
-| `src/hooks/` | react-query: tasks, comments, notes, interactions, events, profile, realtime |
-| `src/pages/` | Login, Tasks(+detail), Notes(+detail), Events, Profile, Create |
-| `src/pwa/` | register SW, install prompt, notifications |
-| `scripts/gen-icons.mjs` | Sinh icon PWA từ SVG (`npm run gen-icons`) |
+| Thư mục                 | Nội dung                                                                     |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| `supabase/migrations/`  | SQL schema (7 bảng + 2 bucket + RLS)                                         |
+| `src/lib/`              | `supabase.ts`, `queryClient.ts`                                              |
+| `src/providers/`        | `AuthProvider` (session)                                                     |
+| `src/hooks/`            | react-query: tasks, comments, notes, interactions, events, profile, realtime |
+| `src/pages/`            | Login, Tasks(+detail), Notes(+detail), Events, Profile, Create               |
+| `src/pwa/`              | register SW, install prompt, notifications                                   |
+| `scripts/gen-icons.mjs` | Sinh icon PWA từ SVG (`npm run gen-icons`)                                   |
 
 ## Icon PWA
 
@@ -47,6 +47,7 @@ npm run gen-icons
 Luồng: client subscribe → lưu `push_subscriptions` → sau mỗi mutation (tạo việc / note / comment / reaction) client gọi Edge Function `notify` → gửi push cho người NHẬN → SW (`src/sw.ts`) hiện notification.
 
 **Thành phần:**
+
 - SW: `src/sw.ts` (`push`, `notificationclick`).
 - Client: `src/hooks/usePush.ts` (`enable`, `notify`), `src/pwa/notifications.ts`.
 - DB: `supabase/migrations/00002_push_subscriptions.sql`.
@@ -60,7 +61,7 @@ Luồng: client subscribe → lưu `push_subscriptions` → sau mỗi mutation (
 4. Deploy Edge Function + set secrets:
    ```bash
    supabase functions deploy notify
-   supabase secrets set VAPID_PUBLIC_KEY=<public> VAPID_PRIVATE_KEY=<private> VAPID_SUBJECT=mailto:ban@email.com
+   supabase secrets set VAPID_PUBLIC_KEY=<public> VAPID_PRIVATE_KEY=<private> VAPID_SUBJECT=mailto:email@email.com
    ```
    (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` có sẵn trong runtime Edge Function.)
 5. Trên app: tab **Cá nhân → Thông báo** → cấp quyền (lưu subscription).
