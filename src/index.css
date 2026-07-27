@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+/* =========================================================================
+   COUPLE APP — Design tokens (light, warm rose theme)
+   ========================================================================= */
+:root {
+  --radius: 0.85rem;
+
+  --background: oklch(0.995 0.006 20);
+  --foreground: oklch(0.24 0.02 25);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.02 25);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.24 0.02 25);
+
+  --primary: oklch(0.62 0.2 12);
+  --primary-foreground: oklch(0.99 0.01 20);
+
+  --secondary: oklch(0.96 0.02 30);
+  --secondary-foreground: oklch(0.35 0.05 20);
+
+  --muted: oklch(0.965 0.01 30);
+  --muted-foreground: oklch(0.55 0.03 25);
+
+  --accent: oklch(0.95 0.04 340);
+  --accent-foreground: oklch(0.35 0.08 350);
+
+  --destructive: oklch(0.58 0.22 25);
+  --destructive-foreground: oklch(0.99 0.01 20);
+
+  --success: oklch(0.68 0.16 155);
+  --warning: oklch(0.78 0.16 75);
+
+  --border: oklch(0.92 0.01 30);
+  --input: oklch(0.92 0.01 30);
+  --ring: oklch(0.62 0.2 12);
+}
+
+.dark {
+  --background: oklch(0.18 0.01 25);
+  --foreground: oklch(0.96 0.01 30);
+  --card: oklch(0.22 0.015 25);
+  --card-foreground: oklch(0.96 0.01 30);
+  --popover: oklch(0.22 0.015 25);
+  --popover-foreground: oklch(0.96 0.01 30);
+  --primary: oklch(0.68 0.2 12);
+  --primary-foreground: oklch(0.18 0.01 25);
+  --secondary: oklch(0.28 0.02 25);
+  --secondary-foreground: oklch(0.96 0.01 30);
+  --muted: oklch(0.28 0.02 25);
+  --muted-foreground: oklch(0.7 0.02 30);
+  --accent: oklch(0.32 0.05 350);
+  --accent-foreground: oklch(0.96 0.01 30);
+  --destructive: oklch(0.62 0.22 25);
+  --destructive-foreground: oklch(0.98 0.01 20);
+  --success: oklch(0.68 0.16 155);
+  --warning: oklch(0.78 0.16 75);
+  --border: oklch(0.32 0.02 25);
+  --input: oklch(0.32 0.02 25);
+  --ring: oklch(0.68 0.2 12);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* =========================================================================
+   Base
+   ========================================================================= */
+* {
+  border-color: var(--color-border);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+/* Ẩn scrollbar cho cảm giác native */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* =========================================================================
+   Micro-interactions / page transitions
+   ========================================================================= */
+@keyframes fade-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-page {
+  animation: fade-slide-up 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.animate-pop {
+  animation: pop-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Stagger cho list item */
+.stagger > * {
+  animation: fade-slide-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger > *:nth-child(3) { animation-delay: 0.1s; }
+.stagger > *:nth-child(4) { animation-delay: 0.14s; }
+.stagger > *:nth-child(5) { animation-delay: 0.18s; }
+.stagger > *:nth-child(6) { animation-delay: 0.22s; }
+.stagger > *:nth-child(7) { animation-delay: 0.26s; }
+.stagger > *:nth-child(8) { animation-delay: 0.3s; }
+
+.active-press {
+  transition: transform 0.12s ease;
+}
+.active-press:active {
+  transform: scale(0.96);
+}
