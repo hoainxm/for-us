@@ -20,8 +20,10 @@ import { useProfiles } from "@/hooks/useProfile";
 import { useCreateTask } from "@/hooks/useTasks";
 import { useAlbums, useCreateAlbum, useCreateNote } from "@/hooks/useNotes";
 import { useCreateEvent } from "@/hooks/useEvents";
+import { useCreateEventPost } from "@/hooks/useEventPosts";
 import { useCreateExpense } from "@/hooks/useExpenses";
 import { usePush } from "@/hooks/usePush";
+import type { ExpenseKind } from "@/types";
 import {
   EVENT_CATEGORIES,
   EXPENSE_CATEGORIES,
@@ -67,6 +69,7 @@ export default function CreatePage() {
   const createNote = useCreateNote();
   const createAlbum = useCreateAlbum();
   const createEvent = useCreateEvent();
+  const createEventPost = useCreateEventPost();
   const createExpense = useCreateExpense();
   const push = usePush();
 
@@ -95,6 +98,7 @@ export default function CreatePage() {
   const [expenseCategory, setExpenseCategory] = useState<string>(EXPENSE_CATEGORIES[0]);
   const [paidBy, setPaidBy] = useState<string | null>(null);
   const [spentDate, setSpentDate] = useState(todayDate);
+  const [kind, setKind] = useState<ExpenseKind>("expense");
 
   const effectiveAssignee = assignee ?? user?.id ?? "";
   const effectivePayer = paidBy ?? user?.id ?? null;
@@ -102,6 +106,7 @@ export default function CreatePage() {
     createTask.isPending ||
     createNote.isPending ||
     createEvent.isPending ||
+    createEventPost.isPending ||
     createExpense.isPending;
 
   const toggleTag = (tag: string) =>
@@ -180,9 +185,24 @@ export default function CreatePage() {
       createEvent.mutate(
         { title: text.trim(), event_date: eventDate, type: eventType, category: eventCategory },
         {
-          onSuccess: () => {
+          onSuccess: async (eventId) => {
+            // Có ảnh -> tạo luôn 1 post đầu tiên gắn vào sự kiện
+            if (files.length > 0) {
+              try {
+                await createEventPost.mutateAsync({
+                  eventId,
+                  authorId: user.id,
+                  content: "",
+                  files,
+                });
+              } catch (e) {
+                toast.error("Sự kiện đã tạo nhưng ảnh lỗi", {
+                  description: (e as Error).message,
+                });
+              }
+            }
             toast.success("Đã thêm sự kiện 💗");
-            navigate("/events");
+            navigate(`/events/${eventId}`);
           },
           onError: (e) => toast.error("Lỗi", { description: (e as Error).message }),
         },
@@ -200,6 +220,7 @@ export default function CreatePage() {
         note: text.trim() || null,
         paid_by: effectivePayer,
         spent_date: spentDate,
+        kind,
       },
       {
         onSuccess: () => {
@@ -399,12 +420,61 @@ export default function CreatePage() {
                 ))}
               </div>
             </Field>
+            <Field label={`Ảnh (tối đa ${NOTE_IMAGE_LIMIT})`}>
+              <div className="grid grid-cols-4 gap-2">
+                {files.map((f, i) => (
+                  <div key={i} className="relative aspect-square">
+                    <img src={URL.createObjectURL(f)} alt="preview" className="size-full rounded-lg object-cover" />
+                    <button
+                      onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
+                      aria-label="Xoá ảnh"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </div>
+                ))}
+                {files.length < NOTE_IMAGE_LIMIT && (
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    className="active-press flex aspect-square items-center justify-center rounded-lg border-2 border-dashed border-border text-muted-foreground"
+                  >
+                    <ImagePlus className="size-6" />
+                  </button>
+                )}
+              </div>
+              <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={onPickFiles} />
+            </Field>
           </Card>
         )}
 
         {/* ===== EXPENSE ===== */}
         {mode === "expense" && (
           <Card className="space-y-4 p-4">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setKind("expense")}
+                className={cn(
+                  "active-press rounded-xl border-2 py-2.5 text-sm font-semibold transition-colors",
+                  kind === "expense"
+                    ? "border-destructive bg-destructive/10 text-destructive"
+                    : "border-border text-muted-foreground",
+                )}
+              >
+                − Chi
+              </button>
+              <button
+                onClick={() => setKind("income")}
+                className={cn(
+                  "active-press rounded-xl border-2 py-2.5 text-sm font-semibold transition-colors",
+                  kind === "income"
+                    ? "border-success bg-success/10 text-success"
+                    : "border-border text-muted-foreground",
+                )}
+              >
+                + Thu
+              </button>
+            </div>
             <Field label="Số tiền (đ)">
               <Input
                 value={amount}

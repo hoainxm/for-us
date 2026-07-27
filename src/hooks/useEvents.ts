@@ -42,9 +42,14 @@ export function useCreateEvent() {
       event_date: string;
       type: EventType;
       category: string | null;
-    }) => {
-      const { error } = await supabase.from("events").insert(input);
+    }): Promise<string> => {
+      const { data, error } = await supabase
+        .from("events")
+        .insert(input)
+        .select("id")
+        .single();
       if (error) throw error;
+      return (data as { id: string }).id;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["events"] }),
   });

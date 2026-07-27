@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import type { Expense } from "@/types";
+import type { Expense, ExpenseKind } from "@/types";
 
 export function useExpenses() {
   return useQuery({
@@ -8,7 +8,7 @@ export function useExpenses() {
     queryFn: async (): Promise<Expense[]> => {
       const { data, error } = await supabase
         .from("expenses")
-        .select("id, amount, category, note, paid_by, spent_date, created_at")
+        .select("id, amount, category, note, paid_by, spent_date, kind, created_at")
         .order("spent_date", { ascending: false })
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -23,6 +23,7 @@ export interface NewExpenseInput {
   note: string | null;
   paid_by: string | null;
   spent_date: string;
+  kind: ExpenseKind;
 }
 
 export function useCreateExpense() {

@@ -73,6 +73,8 @@ export interface EventPost {
   created_at: string;
 }
 
+export type ExpenseKind = "expense" | "income";
+
 export interface Expense {
   id: string;
   amount: number;
@@ -80,5 +82,6 @@ export interface Expense {
   note: string | null;
   paid_by: string | null;
   spent_date: string; // date
+  kind: ExpenseKind;
   created_at: string;
 }

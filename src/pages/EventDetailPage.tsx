@@ -121,7 +121,7 @@ export default function EventDetailPage() {
             </p>
             <p className="text-sm text-muted-foreground">{label}</p>
             <p className="mt-1 text-sm font-medium">
-              {format(new Date(ev.event_date), "EEEE, dd MMMM yyyy", { locale: vi })}
+              {format(new Date(ev.event_date), "EEEE, dd/MM/yyyy", { locale: vi })}
             </p>
           </Card>
         )}

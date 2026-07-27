@@ -98,7 +98,7 @@ function EventCard({
           <p className="truncate font-semibold">{event.title}</p>
           <p className="flex items-center gap-1 text-xs text-muted-foreground">
             <CalendarHeart className="size-3.5" />
-            {format(new Date(event.event_date), "dd MMMM yyyy", { locale: vi })}
+            {format(new Date(event.event_date), "dd/MM/yyyy", { locale: vi })}
           </p>
           {event.category && (
             <Badge variant="secondary" className="mt-1">
