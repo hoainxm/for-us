@@ -29,7 +29,7 @@ function urlBase64ToUint8Array(base64: string) {
 // Chỉ chạy nếu có VAPID public key (VITE_VAPID_PUBLIC_KEY). Trả về subscription
 // để gửi lên backend/Edge Function lưu lại. Chưa cấu hình -> trả null.
 export async function subscribeToPush(): Promise<PushSubscription | null> {
-  const vapid = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
+  const vapid = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined)?.trim();
   if (!vapid || !notificationsSupported()) return null;
   const reg = await navigator.serviceWorker.ready;
   const existing = await reg.pushManager.getSubscription();
