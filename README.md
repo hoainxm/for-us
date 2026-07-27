@@ -1,4 +1,4 @@
-# Couple App 💕
+# For Us 💕
 
 PWA quản lý công việc & nhật ký chia sẻ cho 2 người. React + TypeScript + Vite + Supabase + Tailwind.
 
