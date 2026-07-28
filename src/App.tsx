@@ -13,6 +13,7 @@ import ExpensesPage from "@/pages/ExpensesPage";
 import ExpenseDetailPage from "@/pages/ExpenseDetailPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ChangePasswordPage from "@/pages/ChangePasswordPage";
+import NotificationsPage from "@/pages/NotificationsPage";
 import CreatePage from "@/pages/CreatePage";
 
 function Splash() {
@@ -50,6 +51,7 @@ export default function App() {
         <Route path="/notes" element={<NotesPage />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/expenses" element={<ExpensesPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
 

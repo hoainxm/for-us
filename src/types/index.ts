@@ -23,6 +23,31 @@ export interface Task {
   is_completed: boolean;
   completed_at?: string | null; // ISO — ngày done
   comment_count?: number;
+  duration_min?: number | null;
+  remind_before_min?: number | null;
+  reminded_at?: string | null;
+}
+
+export type NotificationType =
+  | "task_created"
+  | "task_comment"
+  | "note_created"
+  | "note_comment"
+  | "reaction"
+  | "event_post"
+  | "reminder";
+
+export interface AppNotification {
+  id: string;
+  user_id: string;
+  actor_id: string | null;
+  type: NotificationType;
+  title: string;
+  body: string;
+  url: string;
+  entity_id: string | null;
+  is_read: boolean;
+  created_at: string;
 }
 
 export interface TaskComment {

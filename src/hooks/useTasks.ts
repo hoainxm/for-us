@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import type { RecurrenceRule, Task } from "@/types";
 
 const TASK_COLS =
-  "id, title, priority, tags, recurrence_rule, assigned_to, due_date, is_completed, completed_at";
+  "id, title, priority, tags, recurrence_rule, assigned_to, due_date, is_completed, completed_at, duration_min, remind_before_min, reminded_at";
 const TASK_COLS_WITH_COUNT = `${TASK_COLS}, task_comments(count)`;
 
 const dayKey = (d: Date) => startOfDay(d).toISOString();
@@ -103,6 +103,9 @@ export function useCompleteTask() {
           recurrence_rule: task.recurrence_rule,
           assigned_to: task.assigned_to,
           due_date: next.toISOString(),
+          duration_min: task.duration_min ?? null,
+          remind_before_min: task.remind_before_min ?? null,
+          reminded_at: null,
           is_completed: false,
         });
         if (insErr) throw insErr;
@@ -134,6 +137,8 @@ export interface NewTaskInput {
   recurrence_rule: RecurrenceRule | null;
   assigned_to: string;
   due_date: string;
+  duration_min: number | null;
+  remind_before_min: number | null;
 }
 
 export function useCreateTask() {

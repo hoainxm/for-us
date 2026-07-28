@@ -88,6 +88,8 @@ export default function CreatePage() {
   const [due, setDue] = useState(defaultDue);
   const [recurrence, setRecurrence] = useState<RecurrenceRule | "none">("none");
   const [tags, setTags] = useState<string[]>([]);
+  const [duration, setDuration] = useState<number | null>(null);
+  const [remind, setRemind] = useState<number | null>(null);
 
   // note
   const [files, setFiles] = useState<File[]>([]);
@@ -154,6 +156,8 @@ export default function CreatePage() {
           recurrence_rule: recurrence === "none" ? null : recurrence,
           assigned_to: effectiveAssignee,
           due_date: new Date(due).toISOString(),
+          duration_min: duration,
+          remind_before_min: remind,
         },
         {
           onSuccess: () => {
@@ -313,6 +317,36 @@ export default function CreatePage() {
                 {recurrences.map((r) => (
                   <Chip key={r.key} active={recurrence === r.key} onClick={() => setRecurrence(r.key)}>
                     {r.label}
+                  </Chip>
+                ))}
+              </div>
+            </Field>
+            <Field label="Thời lượng (cho lịch)">
+              <div className="flex flex-wrap gap-2">
+                <Chip active={duration === null} onClick={() => setDuration(null)}>
+                  Không
+                </Chip>
+                {[30, 45, 60, 90, 120].map((m) => (
+                  <Chip key={m} active={duration === m} onClick={() => setDuration(m)}>
+                    {m}′
+                  </Chip>
+                ))}
+              </div>
+            </Field>
+            <Field label="Nhắc trước">
+              <div className="flex flex-wrap gap-2">
+                <Chip active={remind === null} onClick={() => setRemind(null)}>
+                  Không
+                </Chip>
+                {[
+                  { v: 0, l: "Đúng giờ" },
+                  { v: 5, l: "5′" },
+                  { v: 15, l: "15′" },
+                  { v: 30, l: "30′" },
+                  { v: 60, l: "1h" },
+                ].map((o) => (
+                  <Chip key={o.v} active={remind === o.v} onClick={() => setRemind(o.v)}>
+                    {o.l}
                   </Chip>
                 ))}
               </div>

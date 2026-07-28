@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ProfileAvatarButton } from "./ProfileAvatarButton";
+import { NotificationBell } from "./NotificationBell";
 
 export function PageHeader({
   title,
@@ -21,7 +22,13 @@ export function PageHeader({
         <h1 className="truncate text-2xl font-bold tracking-tight">{title}</h1>
         {subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>}
       </div>
-      {action ?? (avatar ? <ProfileAvatarButton /> : null)}
+      {action ??
+        (avatar ? (
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <ProfileAvatarButton />
+          </div>
+        ) : null)}
     </header>
   );
 }
