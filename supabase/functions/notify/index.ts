@@ -16,15 +16,28 @@ const json = (status: number, data: unknown) =>
     headers: { ...cors, "Content-Type": "application/json" },
   });
 
-webpush.setVapidDetails(
-  Deno.env.get("VAPID_SUBJECT") ?? "mailto:admin@for-us.app",
-  Deno.env.get("VAPID_PUBLIC_KEY")!,
-  Deno.env.get("VAPID_PRIVATE_KEY")!,
-);
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json(405, { error: "method not allowed" });
+
+  // Kiểm tra secret VAPID trước — báo rõ nếu thiếu thay vì crash 500.
+  const vapidPublic = Deno.env.get("VAPID_PUBLIC_KEY")?.trim();
+  const vapidPrivate = Deno.env.get("VAPID_PRIVATE_KEY")?.trim();
+  if (!vapidPublic || !vapidPrivate) {
+    return json(500, {
+      error:
+        "Thiếu secret VAPID. Chạy: supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:...",
+    });
+  }
+  try {
+    webpush.setVapidDetails(
+      Deno.env.get("VAPID_SUBJECT")?.trim() || "mailto:admin@for-us.app",
+      vapidPublic,
+      vapidPrivate,
+    );
+  } catch (e) {
+    return json(500, { error: `VAPID không hợp lệ: ${(e as Error).message}` });
+  }
 
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return json(401, { error: "missing authorization" });

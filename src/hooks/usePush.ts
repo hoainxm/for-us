@@ -82,7 +82,18 @@ export function usePush() {
         url: "/",
       },
     });
-    if (error) throw error;
+    if (error) {
+      // FunctionsHttpError -> đọc body để lấy lý do thật từ Edge Function
+      let detail = error.message;
+      try {
+        const ctx = (error as { context?: Response }).context;
+        const body = ctx && (await ctx.json());
+        if (body?.error) detail = body.error;
+      } catch {
+        // giữ message gốc
+      }
+      throw new Error(detail);
+    }
     return (data as { sent?: number })?.sent ?? 0;
   };
 
