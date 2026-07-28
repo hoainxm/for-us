@@ -8,3 +8,7 @@ dist-ssr
 .DS_Store
 .vscode/*
 !.vscode/extensions.json
+
+# Supabase CLI cache
+supabase/.temp
+supabase/.branches
