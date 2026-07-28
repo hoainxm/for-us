@@ -22,6 +22,7 @@ export interface Task {
   due_date: string; // ISO
   is_completed: boolean;
   completed_at?: string | null; // ISO — ngày done
+  comment_count?: number;
 }
 
 export interface TaskComment {

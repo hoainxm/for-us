@@ -2,9 +2,9 @@ import { useRef, useState, type ReactNode } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const THRESHOLD = 96; // px kéo phải để kích hoạt Done
+const THRESHOLD = 96; // px kéo TRÁI để kích hoạt Done
 
-// Quẹt phải để Done. Kéo < 6px coi như tap -> onTap.
+// Quẹt TRÁI để Done. Kéo < 6px coi như tap -> onTap.
 export function SwipeableRow({
   children,
   onComplete,
@@ -16,7 +16,7 @@ export function SwipeableRow({
   onTap?: () => void;
   disabled?: boolean;
 }) {
-  const [dx, setDx] = useState(0);
+  const [dx, setDx] = useState(0); // <= 0
   const [animating, setAnimating] = useState(false);
   const startX = useRef(0);
   const startY = useRef(0);
@@ -37,7 +37,6 @@ export function SwipeableRow({
     const diffX = e.clientX - startX.current;
     const diffY = e.clientY - startY.current;
 
-    // Xác định hướng lần đầu: nếu dọc nhiều hơn -> nhường cuộn.
     if (!horizontal.current) {
       if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 8) {
         dragging.current = false;
@@ -49,7 +48,7 @@ export function SwipeableRow({
       }
     }
     if (horizontal.current) {
-      setDx(Math.max(0, diffX)); // chỉ cho quẹt phải
+      setDx(Math.min(0, diffX)); // chỉ cho quẹt trái
     }
   };
 
@@ -58,12 +57,12 @@ export function SwipeableRow({
     dragging.current = false;
 
     if (!horizontal.current) {
-      onTap?.(); // không kéo -> tap
+      onTap?.();
       return;
     }
     setAnimating(true);
-    if (dx >= THRESHOLD) {
-      setDx(600); // trượt ra khỏi màn
+    if (-dx >= THRESHOLD) {
+      setDx(-600); // trượt ra khỏi màn (bên trái)
       window.setTimeout(onComplete, 180);
     } else {
       setDx(0);
@@ -71,13 +70,13 @@ export function SwipeableRow({
     horizontal.current = false;
   };
 
-  const progress = Math.min(dx / THRESHOLD, 1);
+  const progress = Math.min(-dx / THRESHOLD, 1);
 
   return (
     <div className="relative overflow-hidden rounded-xl">
-      {/* Lớp nền Done */}
+      {/* Lớp nền Done (bên phải, lộ ra khi kéo trái) */}
       <div
-        className="absolute inset-0 flex items-center rounded-xl bg-success pl-5"
+        className="absolute inset-0 flex items-center justify-end rounded-xl bg-success pr-5"
         style={{ opacity: progress }}
       >
         <Check

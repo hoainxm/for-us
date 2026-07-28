@@ -34,11 +34,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     apply(mode);
-    if (mode !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => apply("system");
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
+    const resync = () => {
+      if (mode === "system") apply("system");
+    };
+    // Máy đổi theme -> event 'change'. Đề phòng miss event: re-sync khi quay lại app.
+    mq.addEventListener("change", resync);
+    document.addEventListener("visibilitychange", resync);
+    window.addEventListener("focus", resync);
+    return () => {
+      mq.removeEventListener("change", resync);
+      document.removeEventListener("visibilitychange", resync);
+      window.removeEventListener("focus", resync);
+    };
   }, [mode]);
 
   const value = useMemo<ThemeState>(

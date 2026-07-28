@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   CheckSquare,
@@ -73,7 +73,13 @@ export default function CreatePage() {
   const createExpense = useCreateExpense();
   const push = usePush();
 
-  const [mode, setMode] = useState<Mode>("task");
+  const [searchParams] = useSearchParams();
+  const initialMode = (["task", "note", "event", "expense"] as const).includes(
+    searchParams.get("type") as Mode,
+  )
+    ? (searchParams.get("type") as Mode)
+    : "task";
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [text, setText] = useState("");
 
   // task

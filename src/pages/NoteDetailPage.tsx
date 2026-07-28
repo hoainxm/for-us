@@ -121,7 +121,9 @@ export default function NoteDetailPage() {
               {albumName && <Badge variant="outline">{albumName}</Badge>}
             </div>
 
-            {note.content && <p className="leading-relaxed">{note.content}</p>}
+            {note.content && (
+              <p className="whitespace-pre-wrap break-words leading-relaxed">{note.content}</p>
+            )}
 
             {note.images.length > 0 && (
               <div className={cn("grid gap-1", note.images.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
@@ -177,7 +179,7 @@ export default function NoteDetailPage() {
                     )}
                   >
                     {!mine && <p className="mb-0.5 text-xs font-semibold">{author?.display_name}</p>}
-                    <p className="text-sm leading-relaxed">{c.value}</p>
+                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{c.value}</p>
                     <p className={mine ? "mt-1 text-right text-[10px] opacity-80" : "mt-1 text-[10px] text-muted-foreground"}>
                       {formatDistanceToNow(new Date(c.created_at), { addSuffix: true, locale: vi })}
                     </p>

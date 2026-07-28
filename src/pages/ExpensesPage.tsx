@@ -1,35 +1,42 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { format, isSameMonth } from "date-fns";
 import { vi } from "date-fns/locale";
-import { ArrowDownLeft, ArrowUpRight, Trash2, Wallet } from "lucide-react";
-import { toast } from "sonner";
+import { ArrowDownLeft, ArrowUpRight, ChevronRight, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { useExpenses, useDeleteExpense } from "@/hooks/useExpenses";
+import { useExpenses } from "@/hooks/useExpenses";
 import { useProfiles } from "@/hooks/useProfile";
 import { EXPENSE_CATEGORY_EMOJI } from "@/lib/constants";
-import type { Expense } from "@/types";
+import type { Expense, ExpenseKind } from "@/types";
 
 const formatVnd = (n: number) => new Intl.NumberFormat("vi-VN").format(n) + "₫";
 
+type KindFilter = "all" | ExpenseKind;
+
 export default function ExpensesPage() {
+  const navigate = useNavigate();
   const { data, isLoading, isError, error, refetch } = useExpenses();
   const { data: profiles } = useProfiles();
-  const del = useDeleteExpense();
   const nameOf = (id: string | null) => (id ? profiles?.find((p) => p.id === id) : undefined);
 
-  const [personFilter, setPersonFilter] = useState<string | null>(null); // null = tất cả
+  const [personFilter, setPersonFilter] = useState<string | null>(null);
+  const [kindFilter, setKindFilter] = useState<KindFilter>("all");
   const now = new Date();
 
   const filtered = useMemo(
-    () => (data ?? []).filter((e) => !personFilter || e.paid_by === personFilter),
-    [data, personFilter],
+    () =>
+      (data ?? []).filter(
+        (e) =>
+          (!personFilter || e.paid_by === personFilter) &&
+          (kindFilter === "all" || e.kind === kindFilter),
+      ),
+    [data, personFilter, kindFilter],
   );
 
-  // Tổng thu/chi tháng này (theo filter)
   const { income, expense } = useMemo(() => {
     let income = 0;
     let expense = 0;
@@ -60,7 +67,7 @@ export default function ExpensesPage() {
       {/* Lọc theo người */}
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-1 pt-2">
         <FilterChip active={personFilter === null} onClick={() => setPersonFilter(null)}>
-          Tất cả
+          Mọi người
         </FilterChip>
         {profiles?.map((p) => (
           <FilterChip key={p.id} active={personFilter === p.id} onClick={() => setPersonFilter(p.id)}>
@@ -69,25 +76,36 @@ export default function ExpensesPage() {
         ))}
       </div>
 
+      {/* Lọc thu/chi */}
+      <div className="flex gap-2 px-4 pb-1">
+        <FilterChip active={kindFilter === "all"} onClick={() => setKindFilter("all")}>
+          Tất cả
+        </FilterChip>
+        <FilterChip active={kindFilter === "income"} onClick={() => setKindFilter("income")}>
+          Thu
+        </FilterChip>
+        <FilterChip active={kindFilter === "expense"} onClick={() => setKindFilter("expense")}>
+          Chi
+        </FilterChip>
+      </div>
+
       <div className="space-y-5 p-4 pt-2">
         {/* Summary tháng */}
         <Card className="space-y-3 bg-gradient-to-br from-primary/10 to-card p-5">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Wallet className="size-4" /> Tháng {format(now, "MM/yyyy")}
           </div>
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-xs text-muted-foreground">Số dư</p>
-              <p
-                className={cn(
-                  "text-2xl font-bold tabular-nums",
-                  balance >= 0 ? "text-success" : "text-destructive",
-                )}
-              >
-                {balance >= 0 ? "" : "−"}
-                {formatVnd(Math.abs(balance))}
-              </p>
-            </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Số dư</p>
+            <p
+              className={cn(
+                "text-2xl font-bold tabular-nums",
+                balance >= 0 ? "text-success" : "text-destructive",
+              )}
+            >
+              {balance >= 0 ? "" : "−"}
+              {formatVnd(Math.abs(balance))}
+            </p>
           </div>
           <div className="flex gap-2">
             <div className="flex flex-1 items-center gap-2 rounded-lg bg-success/10 px-3 py-2">
@@ -154,17 +172,28 @@ export default function ExpensesPage() {
                   const payer = nameOf(e.paid_by);
                   const isIncome = e.kind === "income";
                   return (
-                    <div key={e.id} className="flex items-center gap-3 p-3">
+                    <button
+                      key={e.id}
+                      onClick={() => navigate(`/expenses/${e.id}`)}
+                      className="active-press flex w-full items-center gap-3 p-3 text-left"
+                    >
                       <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-lg">
                         {isIncome ? "💰" : EXPENSE_CATEGORY_EMOJI[e.category] ?? "✨"}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium">{e.category}</p>
-                        {e.note && <p className="truncate text-xs text-muted-foreground">{e.note}</p>}
+                        <p className="font-medium">{e.category}</p>
+                        {e.note && (
+                          <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
+                            {e.note}
+                          </p>
+                        )}
+                        {payer && (
+                          <span className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                            <Avatar name={payer.display_name} src={payer.avatar_url} className="size-4" />
+                            {payer.display_name}
+                          </span>
+                        )}
                       </div>
-                      {payer && (
-                        <Avatar name={payer.display_name} src={payer.avatar_url} className="size-6" />
-                      )}
                       <span
                         className={cn(
                           "shrink-0 font-semibold tabular-nums",
@@ -174,19 +203,8 @@ export default function ExpensesPage() {
                         {isIncome ? "+" : "−"}
                         {formatVnd(Number(e.amount))}
                       </span>
-                      <button
-                        onClick={() =>
-                          del.mutate(e.id, {
-                            onError: (err) =>
-                              toast.error("Xoá lỗi", { description: (err as Error).message }),
-                          })
-                        }
-                        aria-label="Xoá"
-                        className="active-press text-muted-foreground"
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    </div>
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                    </button>
                   );
                 })}
               </Card>

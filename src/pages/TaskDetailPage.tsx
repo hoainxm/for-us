@@ -144,7 +144,7 @@ export default function TaskDetailPage() {
                     {!mine && (
                       <p className="mb-0.5 text-xs font-semibold">{author?.display_name}</p>
                     )}
-                    <p className="text-sm leading-relaxed">{c.content}</p>
+                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{c.content}</p>
                     <p className={mine ? "mt-1 text-right text-[10px] opacity-80" : "mt-1 text-[10px] text-muted-foreground"}>
                       {formatDistanceToNow(new Date(c.created_at), { addSuffix: true, locale: vi })}
                     </p>

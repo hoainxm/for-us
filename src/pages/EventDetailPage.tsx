@@ -181,7 +181,9 @@ export default function EventDetailPage() {
                     </p>
                   </div>
                 </div>
-                {post.content && <p className="px-4 pb-3 leading-relaxed">{post.content}</p>}
+                {post.content && (
+                  <p className="whitespace-pre-wrap break-words px-4 pb-3 leading-relaxed">{post.content}</p>
+                )}
                 {post.images.length > 0 && (
                   <div className={cn("grid gap-1 px-4 pb-4", post.images.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
                     {post.images.map((url) => (

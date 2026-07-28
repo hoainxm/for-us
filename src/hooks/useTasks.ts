@@ -5,8 +5,19 @@ import type { RecurrenceRule, Task } from "@/types";
 
 const TASK_COLS =
   "id, title, priority, tags, recurrence_rule, assigned_to, due_date, is_completed, completed_at";
+const TASK_COLS_WITH_COUNT = `${TASK_COLS}, task_comments(count)`;
 
 const dayKey = (d: Date) => startOfDay(d).toISOString();
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapCount(row: any): Task {
+  const comment_count = Array.isArray(row.task_comments)
+    ? row.task_comments[0]?.count ?? 0
+    : 0;
+  const { task_comments, ...rest } = row;
+  void task_comments;
+  return { ...rest, comment_count } as Task;
+}
 
 // Xem theo NGÀY:
 //  - todo: chưa xong AND due_date <= cuối ngày đang xem (rollover: việc cũ chưa xong vẫn hiện)
@@ -21,13 +32,13 @@ export function useDayTasks(day: Date) {
       const [todoRes, doneRes] = await Promise.all([
         supabase
           .from("tasks")
-          .select(TASK_COLS)
+          .select(TASK_COLS_WITH_COUNT)
           .eq("is_completed", false)
           .lte("due_date", end)
           .order("due_date", { ascending: true }),
         supabase
           .from("tasks")
-          .select(TASK_COLS)
+          .select(TASK_COLS_WITH_COUNT)
           .eq("is_completed", true)
           .gte("completed_at", start)
           .lte("completed_at", end)
@@ -35,7 +46,10 @@ export function useDayTasks(day: Date) {
       ]);
       if (todoRes.error) throw todoRes.error;
       if (doneRes.error) throw doneRes.error;
-      return { todo: (todoRes.data ?? []) as Task[], done: (doneRes.data ?? []) as Task[] };
+      return {
+        todo: (todoRes.data ?? []).map(mapCount),
+        done: (doneRes.data ?? []).map(mapCount),
+      };
     },
   });
 }

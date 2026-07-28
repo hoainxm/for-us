@@ -17,6 +17,22 @@ export function useExpenses() {
   });
 }
 
+export function useExpense(id: string | undefined) {
+  return useQuery({
+    queryKey: ["expense", id],
+    enabled: !!id,
+    queryFn: async (): Promise<Expense | null> => {
+      const { data, error } = await supabase
+        .from("expenses")
+        .select("id, amount, category, note, paid_by, spent_date, kind, created_at")
+        .eq("id", id!)
+        .maybeSingle();
+      if (error) throw error;
+      return data as Expense | null;
+    },
+  });
+}
+
 export interface NewExpenseInput {
   amount: number;
   category: string;

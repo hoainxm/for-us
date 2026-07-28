@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, isBefore, isToday, startOfDay } from "date-fns";
 import { vi } from "date-fns/locale";
-import { Repeat, RotateCcw, ChevronRight, Check } from "lucide-react";
+import { Repeat, RotateCcw, ChevronRight, Check, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -77,7 +77,7 @@ export default function TasksPage() {
 
           {todo.length > 0 && (
             <p className="px-1 text-center text-xs text-muted-foreground">
-              Quẹt phải để hoàn thành · chạm để xem chi tiết
+              Quẹt trái để hoàn thành · chạm để xem chi tiết
             </p>
           )}
         </section>
@@ -146,6 +146,12 @@ function TaskCard({
             </Badge>
           )}
           {overdue && <Badge variant="high">Trôi từ hôm trước</Badge>}
+          {!!task.comment_count && (
+            <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+              <MessageCircle className="size-3.5" />
+              {task.comment_count}
+            </span>
+          )}
         </div>
       </div>
       <Avatar name={assignee?.display_name} src={assignee?.avatar_url} className="size-8" />

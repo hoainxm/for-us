@@ -129,7 +129,9 @@ export default function NotesPage() {
                   </div>
 
                   {/* Content */}
-                  {note.content && <p className="px-4 pb-3 leading-relaxed">{note.content}</p>}
+                  {note.content && (
+                    <p className="whitespace-pre-wrap break-words px-4 pb-3 leading-relaxed">{note.content}</p>
+                  )}
 
                   {/* Images */}
                   {note.images.length > 0 && (

@@ -10,6 +10,7 @@ import NoteDetailPage from "@/pages/NoteDetailPage";
 import EventsPage from "@/pages/EventsPage";
 import EventDetailPage from "@/pages/EventDetailPage";
 import ExpensesPage from "@/pages/ExpensesPage";
+import ExpenseDetailPage from "@/pages/ExpenseDetailPage";
 import ProfilePage from "@/pages/ProfilePage";
 import ChangePasswordPage from "@/pages/ChangePasswordPage";
 import CreatePage from "@/pages/CreatePage";
@@ -56,6 +57,7 @@ export default function App() {
       <Route path="/tasks/:id" element={<TaskDetailPage />} />
       <Route path="/notes/:id" element={<NoteDetailPage />} />
       <Route path="/events/:id" element={<EventDetailPage />} />
+      <Route path="/expenses/:id" element={<ExpenseDetailPage />} />
       <Route path="/change-password" element={<ChangePasswordPage />} />
 
       {/* Màn Tạo mới: full screen, không có Bottom Nav */}
