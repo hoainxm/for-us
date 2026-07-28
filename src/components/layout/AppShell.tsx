@@ -13,7 +13,7 @@ export function AppShell() {
         key={location.pathname}
         className="no-scrollbar animate-page flex-1 overflow-y-auto"
         style={{
-          paddingTop: "env(safe-area-inset-top)",
+          // KHÔNG padding-top ở đây: header sticky tự chừa notch (safe-area).
           paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)",
         }}
       >
