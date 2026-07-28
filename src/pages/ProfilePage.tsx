@@ -24,6 +24,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/AuthProvider";
 import { useTheme, type ThemeMode } from "@/providers/ThemeProvider";
@@ -256,11 +257,11 @@ export default function ProfilePage() {
           </div>
           <span className="flex-1 font-medium">Ngày sinh</span>
           {updateBirthday.isPending && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
-          <input
-            type="date"
-            defaultValue={me?.birthday ?? ""}
-            onChange={(e) => saveBirthday(e.target.value)}
-            className="rounded-lg border border-input bg-card px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+          <DateField
+            value={me?.birthday ?? ""}
+            onChange={(v) => saveBirthday(v)}
+            placeholder="Chọn ngày"
+            className="w-40"
           />
         </Card>
 

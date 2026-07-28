@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/AuthProvider";
 import { useProfiles } from "@/hooks/useProfile";
@@ -305,12 +306,7 @@ export default function CreatePage() {
               </div>
             </Field>
             <Field label="Hạn chót">
-              <input
-                type="datetime-local"
-                value={due}
-                onChange={(e) => setDue(e.target.value)}
-                className="h-11 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              />
+              <DateField value={due} onChange={setDue} withTime />
             </Field>
             <Field label="Lặp lại">
               <div className="flex gap-2">
@@ -400,12 +396,7 @@ export default function CreatePage() {
         {mode === "event" && (
           <Card className="space-y-4 p-4">
             <Field label="Ngày">
-              <input
-                type="date"
-                value={eventDate}
-                onChange={(e) => setEventDate(e.target.value)}
-                className="h-11 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              />
+              <DateField value={eventDate} onChange={setEventDate} />
             </Field>
             <Field label="Kiểu">
               <div className="flex gap-2">
@@ -509,12 +500,7 @@ export default function CreatePage() {
               </div>
             </Field>
             <Field label="Ngày">
-              <input
-                type="date"
-                value={spentDate}
-                onChange={(e) => setSpentDate(e.target.value)}
-                className="h-11 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              />
+              <DateField value={spentDate} onChange={setSpentDate} />
             </Field>
             <Field label="Ghi chú">
               <Input

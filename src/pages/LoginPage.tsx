@@ -63,7 +63,10 @@ export default function LoginPage() {
             id="email"
             type="email"
             inputMode="email"
-            autoComplete="email"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             placeholder="email@email.com"
             {...register("email")}
           />
