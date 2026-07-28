@@ -25,7 +25,7 @@ export function BottomNav() {
   return (
     <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center">
       <div
-        className="pointer-events-auto relative flex w-full max-w-md items-center justify-around border-t border-border bg-card/95 px-2 pt-2 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] backdrop-blur-lg"
+        className="pointer-events-auto relative flex w-full max-w-md items-center justify-around border-t border-border bg-card px-2 pt-2 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"
         style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
       >
         {/* 2 tab trái */}
