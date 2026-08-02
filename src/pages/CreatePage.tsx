@@ -89,6 +89,7 @@ export default function CreatePage() {
   const [recurrence, setRecurrence] = useState<RecurrenceRule | "none">("none");
   const [tags, setTags] = useState<string[]>([]);
   const [duration, setDuration] = useState<number | null>(null);
+  const [endTime, setEndTime] = useState(""); // "HH:mm" — giờ kết thúc cho lịch học/làm
   const [remind, setRemind] = useState<number | null>(null);
 
   // note
@@ -111,6 +112,20 @@ export default function CreatePage() {
 
   const effectiveAssignee = assignee ?? user?.id ?? "";
   const effectivePayer = paidBy ?? user?.id ?? null;
+
+  // Lịch (từ giờ → đến giờ): tính thời lượng từ giờ bắt đầu (due) tới endTime.
+  const startMinutes = (() => {
+    const d = new Date(due);
+    return Number.isNaN(d.getTime()) ? null : d.getHours() * 60 + d.getMinutes();
+  })();
+  const endMinutes = endTime
+    ? (() => {
+        const [h, m] = endTime.split(":").map(Number);
+        return h * 60 + m;
+      })()
+    : null;
+  const rangeDuration =
+    startMinutes != null && endMinutes != null && endMinutes > startMinutes ? endMinutes - startMinutes : null;
   const busy =
     createTask.isPending ||
     createNote.isPending ||
@@ -149,6 +164,8 @@ export default function CreatePage() {
 
     if (mode === "task") {
       if (!text.trim()) return toast.error("Nhập tên việc đã nha");
+      if (endTime && rangeDuration === null)
+        return toast.error("Giờ kết thúc phải sau giờ bắt đầu");
       createTask.mutate(
         {
           title: text.trim(),
@@ -156,7 +173,7 @@ export default function CreatePage() {
           recurrence_rule: recurrence === "none" ? null : recurrence,
           assigned_to: effectiveAssignee,
           due_date: new Date(due).toISOString(),
-          duration_min: duration,
+          duration_min: endTime ? rangeDuration : duration,
           remind_before_min: remind,
         },
         {
@@ -309,8 +326,32 @@ export default function CreatePage() {
                 ))}
               </div>
             </Field>
-            <Field label="Hạn chót">
+            <Field label="Bắt đầu (ngày & giờ)">
               <DateField value={due} onChange={setDue} withTime />
+            </Field>
+            <Field label="Đến giờ (lịch học / làm việc)">
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => {
+                    setEndTime(e.target.value);
+                    if (e.target.value) setDuration(null); // dùng khoảng giờ -> bỏ thời lượng nhanh
+                  }}
+                  className="h-10 rounded-lg border border-input bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                />
+                {endTime && (
+                  <Chip active={false} onClick={() => setEndTime("")}>
+                    Xoá
+                  </Chip>
+                )}
+                {endTime &&
+                  (rangeDuration != null ? (
+                    <span className="text-xs text-muted-foreground">= {rangeDuration}′</span>
+                  ) : (
+                    <span className="text-xs text-destructive">Phải sau giờ bắt đầu</span>
+                  ))}
+              </div>
             </Field>
             <Field label="Lặp lại">
               <div className="flex gap-2">
@@ -321,13 +362,26 @@ export default function CreatePage() {
                 ))}
               </div>
             </Field>
-            <Field label="Thời lượng (cho lịch)">
+            <Field label="Thời lượng nhanh (nếu không đặt giờ kết thúc)">
               <div className="flex flex-wrap gap-2">
-                <Chip active={duration === null} onClick={() => setDuration(null)}>
+                <Chip
+                  active={duration === null && !endTime}
+                  onClick={() => {
+                    setDuration(null);
+                    setEndTime("");
+                  }}
+                >
                   Không
                 </Chip>
                 {[30, 45, 60, 90, 120].map((m) => (
-                  <Chip key={m} active={duration === m} onClick={() => setDuration(m)}>
+                  <Chip
+                    key={m}
+                    active={duration === m && !endTime}
+                    onClick={() => {
+                      setDuration(m);
+                      setEndTime(""); // chọn preset -> bỏ giờ kết thúc
+                    }}
+                  >
                     {m}′
                   </Chip>
                 ))}
