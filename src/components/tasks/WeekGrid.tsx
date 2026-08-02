@@ -28,6 +28,12 @@ const priorityBar: Record<string, string> = {
   low: "border-l-sky-500",
 };
 
+const priorityDot: Record<string, string> = {
+  high: "bg-rose-500",
+  medium: "bg-amber-500",
+  low: "bg-sky-500",
+};
+
 // Giờ bắt đầu (phút trong ngày) của task
 function startMin(t: Task) {
   const d = new Date(t.due_date);
@@ -133,8 +139,61 @@ export function WeekGrid({
         </div>
       )}
 
-      {/* Timetable cuộn ngang */}
-      <div className="overflow-x-auto rounded-xl border border-border">
+      {/* ===== MOBILE: 7 hàng ngày (cuộn dọc) ===== */}
+      <div className="space-y-3 md:hidden">
+        {days.map((d) => {
+          const items = week
+            .filter((t) => isSameDay(new Date(t.due_date), d))
+            .sort((a, b) => startMin(a) - startMin(b));
+          return (
+            <div key={d.toISOString()} className="space-y-1.5">
+              <div className="flex items-baseline gap-2 px-1">
+                <h3 className={cn("text-sm font-semibold capitalize", isToday(d) && "text-primary")}>
+                  {format(d, "EEEE", { locale: vi })}
+                </h3>
+                <span className="text-xs text-muted-foreground tabular-nums">{format(d, "dd/MM")}</span>
+                {isToday(d) && <span className="text-[10px] font-medium text-primary">hôm nay</span>}
+              </div>
+              {items.length === 0 ? (
+                <p className="px-1 text-xs text-muted-foreground/70">— trống</p>
+              ) : (
+                items.map((t) => {
+                  const timeless = startMin(t) === 0;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => onOpen(t.id)}
+                      className="active-press flex w-full items-center gap-2.5 rounded-lg border border-border bg-card px-2.5 py-2 text-left"
+                    >
+                      <span className="w-12 shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
+                        {timeless ? "Cả ngày" : format(new Date(t.due_date), "HH:mm")}
+                      </span>
+                      <span className={cn("size-2 shrink-0 rounded-full", priorityDot[t.priority])} />
+                      <span
+                        className={cn(
+                          "min-w-0 flex-1 truncate text-sm",
+                          t.is_completed && "text-muted-foreground line-through",
+                        )}
+                      >
+                        {t.title}
+                      </span>
+                      {t.recurrence_rule && <Repeat className="size-3.5 shrink-0 text-muted-foreground" />}
+                      {t.duration_min != null && (
+                        <Badge variant="secondary" className="shrink-0">
+                          {t.duration_min}′
+                        </Badge>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ===== DESKTOP/TABLET: timetable grid (cuộn ngang) ===== */}
+      <div className="hidden overflow-x-auto rounded-xl border border-border md:block">
         <div style={{ width: totalW }}>
           {/* Header ngày */}
           <div className="flex border-b border-border">
