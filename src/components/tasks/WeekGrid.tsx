@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import type { Task } from "@/types";
 
 const HOUR_PX = 56; // cao mỗi giờ
-const COL_W = 92; // rộng mỗi cột ngày
+const COL_W = 88; // rộng mỗi cột ngày
 const AXIS_W = 44; // rộng cột trục giờ
 const MIN_BLOCK_PX = 22;
 
@@ -26,12 +26,6 @@ const priorityBar: Record<string, string> = {
   high: "border-l-rose-500",
   medium: "border-l-amber-500",
   low: "border-l-sky-500",
-};
-
-const priorityDot: Record<string, string> = {
-  high: "bg-rose-500",
-  medium: "bg-amber-500",
-  low: "bg-sky-500",
 };
 
 // Giờ bắt đầu (phút trong ngày) của task
@@ -139,123 +133,76 @@ export function WeekGrid({
         </div>
       )}
 
-      {/* ===== MOBILE: 7 hàng ngày (cuộn dọc) ===== */}
-      <div className="space-y-3 md:hidden">
-        {days.map((d) => {
-          const items = week
-            .filter((t) => isSameDay(new Date(t.due_date), d))
-            .sort((a, b) => startMin(a) - startMin(b));
-          return (
-            <div key={d.toISOString()} className="space-y-1.5">
-              <div className="flex items-baseline gap-2 px-1">
-                <h3 className={cn("text-sm font-semibold capitalize", isToday(d) && "text-primary")}>
-                  {format(d, "EEEE", { locale: vi })}
-                </h3>
-                <span className="text-xs text-muted-foreground tabular-nums">{format(d, "dd/MM")}</span>
-                {isToday(d) && <span className="text-[10px] font-medium text-primary">hôm nay</span>}
-              </div>
-              {items.length === 0 ? (
-                <p className="px-1 text-xs text-muted-foreground/70">— trống</p>
-              ) : (
-                items.map((t) => {
-                  const timeless = startMin(t) === 0;
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => onOpen(t.id)}
-                      className="active-press flex w-full items-center gap-2.5 rounded-lg border border-border bg-card px-2.5 py-2 text-left"
-                    >
-                      <span className="w-12 shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
-                        {timeless ? "Cả ngày" : format(new Date(t.due_date), "HH:mm")}
-                      </span>
-                      <span className={cn("size-2 shrink-0 rounded-full", priorityDot[t.priority])} />
-                      <span
-                        className={cn(
-                          "min-w-0 flex-1 truncate text-sm",
-                          t.is_completed && "text-muted-foreground line-through",
-                        )}
-                      >
-                        {t.title}
-                      </span>
-                      {t.recurrence_rule && <Repeat className="size-3.5 shrink-0 text-muted-foreground" />}
-                      {t.duration_min != null && (
-                        <Badge variant="secondary" className="shrink-0">
-                          {t.duration_min}′
-                        </Badge>
-                      )}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* ===== DESKTOP/TABLET: timetable grid (cuộn ngang) ===== */}
-      <div className="hidden overflow-x-auto rounded-xl border border-border md:block">
+      {/*
+        Timetable: khung cuộn 2 chiều GỌN TRONG BOX (max-h) — không tràn ra trang,
+        không đẩy bottom nav. Header ngày dính trên, trục giờ dính trái khi cuộn.
+      */}
+      <div className="relative max-h-[65vh] overflow-auto overscroll-contain rounded-xl border border-border">
         <div style={{ width: totalW }}>
-          {/* Header ngày */}
-          <div className="flex border-b border-border">
-            <div className="sticky left-0 z-20 shrink-0 bg-background" style={{ width: AXIS_W }} />
-            {days.map((d) => (
-              <div
-                key={d.toISOString()}
-                className={cn(
-                  "shrink-0 border-l border-border py-1.5 text-center",
-                  isToday(d) && "bg-primary/10",
-                )}
-                style={{ width: COL_W }}
-              >
-                <p className="text-[11px] font-medium capitalize text-muted-foreground">
-                  {format(d, "EEEEEE", { locale: vi })}
-                </p>
-                <p className={cn("text-sm font-semibold tabular-nums", isToday(d) && "text-primary")}>
-                  {format(d, "dd")}
-                </p>
+          {/* ===== Header dính (ngày + cả ngày) ===== */}
+          <div className="sticky top-0 z-30 border-b border-border bg-background">
+            {/* Hàng ngày */}
+            <div className="flex">
+              <div className="sticky left-0 z-10 shrink-0 bg-background" style={{ width: AXIS_W }} />
+              {days.map((d) => (
+                <div
+                  key={d.toISOString()}
+                  className={cn(
+                    "shrink-0 border-l border-border py-1.5 text-center",
+                    isToday(d) && "bg-primary/10",
+                  )}
+                  style={{ width: COL_W }}
+                >
+                  <p className="text-[11px] font-medium capitalize text-muted-foreground">
+                    {format(d, "EEEEEE", { locale: vi })}
+                  </p>
+                  <p className={cn("text-sm font-semibold tabular-nums", isToday(d) && "text-primary")}>
+                    {format(d, "dd")}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Hàng cả ngày */}
+            {allDay.length > 0 && (
+              <div className="flex border-t border-border">
+                <div
+                  className="sticky left-0 z-10 flex shrink-0 items-center justify-end bg-background pr-1 text-[9px] text-muted-foreground"
+                  style={{ width: AXIS_W }}
+                >
+                  cả ngày
+                </div>
+                {days.map((d) => {
+                  const items = allDay.filter((t) => isSameDay(new Date(t.due_date), d));
+                  return (
+                    <div
+                      key={d.toISOString()}
+                      className={cn("shrink-0 space-y-1 border-l border-border p-1", isToday(d) && "bg-primary/5")}
+                      style={{ width: COL_W }}
+                    >
+                      {items.map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => onOpen(t.id)}
+                          className={cn(
+                            "active-press block w-full truncate rounded border border-l-2 border-border bg-card px-1 py-0.5 text-left text-[10px]",
+                            priorityBar[t.priority],
+                            t.is_completed && "opacity-50 line-through",
+                          )}
+                        >
+                          {t.title}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            )}
           </div>
 
-          {/* Cả ngày */}
-          {allDay.length > 0 && (
-            <div className="flex border-b border-border">
-              <div
-                className="sticky left-0 z-20 flex shrink-0 items-center justify-end bg-background pr-1 text-[9px] text-muted-foreground"
-                style={{ width: AXIS_W }}
-              >
-                cả ngày
-              </div>
-              {days.map((d) => {
-                const items = allDay.filter((t) => isSameDay(new Date(t.due_date), d));
-                return (
-                  <div
-                    key={d.toISOString()}
-                    className={cn("shrink-0 space-y-1 border-l border-border p-1", isToday(d) && "bg-primary/5")}
-                    style={{ width: COL_W }}
-                  >
-                    {items.map((t) => (
-                      <button
-                        key={t.id}
-                        onClick={() => onOpen(t.id)}
-                        className={cn(
-                          "active-press block w-full truncate rounded border border-l-2 border-border bg-card px-1 py-0.5 text-left text-[10px]",
-                          priorityBar[t.priority],
-                          t.is_completed && "opacity-50 line-through",
-                        )}
-                      >
-                        {t.title}
-                      </button>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Lưới giờ */}
+          {/* ===== Lưới giờ ===== */}
           <div className="flex">
-            {/* Trục giờ */}
+            {/* Trục giờ (dính trái) */}
             <div className="sticky left-0 z-20 shrink-0 bg-background" style={{ width: AXIS_W }}>
               {hours.map((h) => (
                 <div key={h} className="relative" style={{ height: HOUR_PX }}>
@@ -320,6 +267,10 @@ export function WeekGrid({
           </div>
         </div>
       </div>
+
+      <p className="px-1 text-center text-[11px] text-muted-foreground">
+        Cuộn ngang/dọc trong khung để xem cả tuần · chạm ô để mở
+      </p>
 
       {week.length === 0 && carryover.length === 0 && (
         <Card className="p-4 text-center text-sm text-muted-foreground">Tuần này chưa có việc nào.</Card>
