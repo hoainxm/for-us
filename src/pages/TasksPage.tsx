@@ -1,6 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { addDays, addMinutes, format, isBefore, isToday, startOfDay, endOfDay } from "date-fns";
+import {
+  addDays,
+  addMinutes,
+  differenceInDays,
+  eachDayOfInterval,
+  endOfDay,
+  format,
+  isBefore,
+  isToday,
+  min as dateMin,
+  startOfDay,
+  startOfWeek,
+} from "date-fns";
 import { vi } from "date-fns/locale";
 import {
   Repeat,
@@ -57,14 +69,19 @@ export default function TasksPage() {
   const [sp, setSp] = useSearchParams();
   const view = (sp.get("view") as View) ?? "list";
   const visibleCount = useVisibleCount();
-  const anchor = useMemo(() => {
+  // Cụm N ngày SNAP theo tuần (T2 đầu tuần): trang trong tuần chạy T2→CN, không lẫn tuần.
+  // vd N=3: [T2,T3,T4] · [T5,T6,T7] · [CN]
+  const ref = useMemo(() => {
     const a = sp.get("anchor");
-    return a ? startOfDay(new Date(a)) : startOfDay(addDays(new Date(), -Math.floor(visibleCount / 2)));
-  }, [sp, visibleCount]);
-  const visibleDays = useMemo(
-    () => Array.from({ length: visibleCount }, (_, i) => addDays(anchor, i)),
-    [anchor, visibleCount],
-  );
+    return a ? startOfDay(new Date(a)) : startOfDay(new Date());
+  }, [sp]);
+  const visibleDays = useMemo(() => {
+    const mon = startOfWeek(ref, { weekStartsOn: 1 });
+    const idx = differenceInDays(ref, mon); // 0..6
+    const start = addDays(mon, Math.floor(idx / visibleCount) * visibleCount);
+    const end = dateMin([addDays(mon, 6), addDays(start, visibleCount - 1)]);
+    return eachDayOfInterval({ start, end });
+  }, [ref, visibleCount]);
   const setView = (v: View) =>
     setSp(
       (p) => {
@@ -86,7 +103,7 @@ export default function TasksPage() {
 
   const [day, setDay] = useState<Date>(() => startOfDay(new Date()));
   const q = useDayTasks(day);
-  const wq = useRangeTasks(anchor, visibleDays[visibleDays.length - 1]);
+  const wq = useRangeTasks(visibleDays[0], visibleDays[visibleDays.length - 1]);
   const { data: profiles } = useProfiles();
   const complete = useCompleteTask();
   const uncomplete = useUncompleteTask();
@@ -139,9 +156,9 @@ export default function TasksPage() {
               days={visibleDays}
               tasks={wq.data.range}
               carryover={wq.data.carryover}
-              onPrev={() => setAnchor(addDays(anchor, -visibleCount))}
-              onNext={() => setAnchor(addDays(anchor, visibleCount))}
-              onToday={() => setAnchor(addDays(startOfDay(new Date()), -Math.floor(visibleCount / 2)))}
+              onPrev={() => setAnchor(addDays(visibleDays[0], -1))}
+              onNext={() => setAnchor(addDays(visibleDays[visibleDays.length - 1], 1))}
+              onToday={() => setAnchor(new Date())}
               onOpen={(id) => navigate(`/tasks/${id}`)}
               onOpenDay={(d) => {
                 setDay(startOfDay(d));

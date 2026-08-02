@@ -183,7 +183,7 @@ export function WeekGrid({
                 className={cn("min-w-0 flex-1 border-l border-border py-1.5 text-center", isToday(d) && "bg-primary/10")}
               >
                 <p className="text-[11px] font-medium capitalize text-muted-foreground">
-                  {format(d, "EEEE", { locale: vi })}
+                  {format(d, "EEEEEE", { locale: vi })}
                 </p>
                 <p className={cn("text-sm font-semibold tabular-nums", isToday(d) && "text-primary")}>
                   {format(d, "dd/MM")}
