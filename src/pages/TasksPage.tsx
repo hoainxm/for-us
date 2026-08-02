@@ -11,6 +11,7 @@ import {
   Bell,
   List,
   CalendarClock,
+  CalendarDays,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -19,8 +20,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { SwipeableRow } from "@/components/tasks/SwipeableRow";
 import { DateStrip } from "@/components/tasks/DateStrip";
+import { WeekGrid, addWeeks } from "@/components/tasks/WeekGrid";
+import { startOfWeek } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useCompleteTask, useDayTasks, useUncompleteTask } from "@/hooks/useTasks";
+import { useCompleteTask, useDayTasks, useUncompleteTask, useWeekTasks } from "@/hooks/useTasks";
 import { useProfiles } from "@/hooks/useProfile";
 import type { Task } from "@/types";
 
@@ -30,13 +33,15 @@ const recurrenceLabel: Record<string, string> = {
   monthly: "Hằng tháng",
 };
 
-type View = "list" | "timeline";
+type View = "list" | "timeline" | "week";
 
 export default function TasksPage() {
   const navigate = useNavigate();
   const [day, setDay] = useState<Date>(() => startOfDay(new Date()));
+  const [weekAnchor, setWeekAnchor] = useState<Date>(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [view, setView] = useState<View>("list");
   const q = useDayTasks(day);
+  const wq = useWeekTasks(weekAnchor);
   const { data: profiles } = useProfiles();
   const complete = useCompleteTask();
   const uncomplete = useUncompleteTask();
@@ -69,16 +74,36 @@ export default function TasksPage() {
 
   return (
     <div>
-      <PageHeader title="Công việc" subtitle={dayLabel} />
-      <DateStrip value={day} onChange={(d) => setDay(startOfDay(d))} />
+      <PageHeader title="Công việc" subtitle={view === "week" ? "Tuần" : dayLabel} />
+      {view !== "week" && <DateStrip value={day} onChange={(d) => setDay(startOfDay(d))} />}
 
-      {/* Toggle List / Lịch */}
-      <div className="flex gap-2 px-4 pb-1">
+      {/* Toggle List / Lịch / Tuần */}
+      <div className="flex gap-2 px-4 pb-1 pt-2">
         <ViewToggle active={view === "list"} onClick={() => setView("list")} icon={List} label="Danh sách" />
         <ViewToggle active={view === "timeline"} onClick={() => setView("timeline")} icon={CalendarClock} label="Lịch" />
+        <ViewToggle active={view === "week"} onClick={() => setView("week")} icon={CalendarDays} label="Tuần" />
       </div>
 
-      <div className="space-y-6 p-4 pt-2">
+      {/* ===== WEEK (thời khóa biểu) ===== */}
+      {view === "week" && (
+        <div className="p-4 pt-2">
+          {wq.isLoading && <SkeletonList />}
+          {wq.isError && <ErrorBox message={(wq.error as Error).message} onRetry={() => wq.refetch()} />}
+          {wq.data && (
+            <WeekGrid
+              weekStart={weekAnchor}
+              week={wq.data.week}
+              carryover={wq.data.carryover}
+              onPrev={() => setWeekAnchor((w) => addWeeks(w, -1))}
+              onNext={() => setWeekAnchor((w) => addWeeks(w, 1))}
+              onToday={() => setWeekAnchor(startOfWeek(new Date(), { weekStartsOn: 1 }))}
+              onOpen={(id) => navigate(`/tasks/${id}`)}
+            />
+          )}
+        </div>
+      )}
+
+      <div className={cn("space-y-6 p-4 pt-2", view === "week" && "hidden")}>
         {q.isLoading && <SkeletonList />}
         {q.isError && <ErrorBox message={(q.error as Error).message} onRetry={() => q.refetch()} />}
         {q.data && todo.length === 0 && <EmptyTodo isToday={isToday(day)} />}

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { addDays, addMonths, addWeeks, endOfDay, isAfter, startOfDay } from "date-fns";
+import { addDays, addMonths, addWeeks, endOfDay, endOfWeek, isAfter, startOfDay, startOfWeek } from "date-fns";
 import { supabase } from "@/lib/supabase";
 import type { RecurrenceRule, Task } from "@/types";
 
@@ -49,6 +49,43 @@ export function useDayTasks(day: Date) {
       return {
         todo: (todoRes.data ?? []).map(mapCount),
         done: (doneRes.data ?? []).map(mapCount),
+      };
+    },
+  });
+}
+
+// Xem theo TUẦN (thời khóa biểu, tuần bắt đầu Thứ 2):
+//  - week: mọi task (done + chưa) có due_date rơi trong tuần đang xem
+//  - carryover: chưa xong AND due_date < đầu tuần (trôi từ tuần trước)
+// Chỉ đọc, không đụng data cũ.
+export function useWeekTasks(weekStart: Date) {
+  const start = startOfWeek(weekStart, { weekStartsOn: 1 });
+  const end = endOfWeek(weekStart, { weekStartsOn: 1 });
+  return useQuery({
+    queryKey: ["tasks", "week", start.toISOString()],
+    queryFn: async (): Promise<{ week: Task[]; carryover: Task[] }> => {
+      const startISO = startOfDay(start).toISOString();
+      const endISO = endOfDay(end).toISOString();
+
+      const [weekRes, carryRes] = await Promise.all([
+        supabase
+          .from("tasks")
+          .select(TASK_COLS_WITH_COUNT)
+          .gte("due_date", startISO)
+          .lte("due_date", endISO)
+          .order("due_date", { ascending: true }),
+        supabase
+          .from("tasks")
+          .select(TASK_COLS_WITH_COUNT)
+          .eq("is_completed", false)
+          .lt("due_date", startISO)
+          .order("due_date", { ascending: true }),
+      ]);
+      if (weekRes.error) throw weekRes.error;
+      if (carryRes.error) throw carryRes.error;
+      return {
+        week: (weekRes.data ?? []).map(mapCount),
+        carryover: (carryRes.data ?? []).map(mapCount),
       };
     },
   });
