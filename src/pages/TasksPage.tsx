@@ -122,6 +122,10 @@ export default function TasksPage() {
               onNext={() => setWeek((w) => addWeeks(w, 1))}
               onToday={() => setWeek(() => new Date())}
               onOpen={(id) => navigate(`/tasks/${id}`)}
+              onOpenDay={(d) => {
+                setDay(startOfDay(d));
+                setView("timeline");
+              }}
             />
           )}
         </div>

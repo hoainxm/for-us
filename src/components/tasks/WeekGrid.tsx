@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   addWeeks,
   eachDayOfInterval,
@@ -21,6 +21,7 @@ const HOUR_PX = 60; // cao mỗi giờ
 const COL_W = 116; // rộng mỗi cột ngày (đủ đọc tên task)
 const AXIS_W = 44; // rộng cột trục giờ
 const MIN_BLOCK_PX = 26;
+const MAX_LANES = 2; // >2 task chồng giờ -> gộp thành 1 khối "N việc"
 
 const priorityBar: Record<string, string> = {
   high: "border-l-rose-500",
@@ -34,23 +35,78 @@ function startMin(t: Task) {
   return getHours(d) * 60 + getMinutes(d);
 }
 
-// Xếp lane cho task trùng giờ trong cùng 1 ngày (greedy)
-function packLanes(tasks: Task[]) {
+const fmtHM = (min: number) =>
+  `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+
+type LayoutItem =
+  | { kind: "task"; task: Task; lane: number; lanes: number; top: number; height: number }
+  | { kind: "more"; count: number; label: string; priority: Task["priority"]; top: number; height: number };
+
+// Bố cục 1 ngày: gom cụm task chồng giờ; cụm ≤2 lane -> xếp cạnh nhau,
+// cụm >2 lane -> gộp 1 khối "N việc" (tránh chẻ ô thành sliver không đọc được).
+function layoutDay(tasks: Task[], startHour: number): LayoutItem[] {
   const sorted = [...tasks].sort((a, b) => startMin(a) - startMin(b));
-  const laneEnd: number[] = []; // phút kết thúc của lane cuối
-  const placed = sorted.map((t) => {
-    const s = startMin(t);
-    const e = s + (t.duration_min ?? 30);
-    let lane = laneEnd.findIndex((end) => end <= s);
-    if (lane === -1) {
-      lane = laneEnd.length;
-      laneEnd.push(e);
-    } else {
-      laneEnd[lane] = e;
+  const topOf = (min: number) => ((min - startHour * 60) / 60) * HOUR_PX;
+  const heightOf = (dur: number) => Math.max((dur / 60) * HOUR_PX, MIN_BLOCK_PX);
+  const items: LayoutItem[] = [];
+
+  let i = 0;
+  while (i < sorted.length) {
+    // gom cluster: chuỗi task giao nhau liên tiếp
+    const cluster: Task[] = [sorted[i]];
+    let maxEnd = startMin(sorted[i]) + (sorted[i].duration_min ?? 30);
+    let j = i + 1;
+    while (j < sorted.length && startMin(sorted[j]) < maxEnd) {
+      cluster.push(sorted[j]);
+      maxEnd = Math.max(maxEnd, startMin(sorted[j]) + (sorted[j].duration_min ?? 30));
+      j++;
     }
-    return { task: t, lane, end: e };
-  });
-  return { placed, lanes: Math.max(1, laneEnd.length) };
+    // xếp lane trong cluster
+    const laneEnd: number[] = [];
+    const laneOf = cluster.map((t) => {
+      const s = startMin(t);
+      const e = s + (t.duration_min ?? 30);
+      let lane = laneEnd.findIndex((end) => end <= s);
+      if (lane === -1) {
+        lane = laneEnd.length;
+        laneEnd.push(e);
+      } else {
+        laneEnd[lane] = e;
+      }
+      return lane;
+    });
+    const lanes = Math.max(1, laneEnd.length);
+
+    if (lanes <= MAX_LANES) {
+      cluster.forEach((t, k) => {
+        items.push({
+          kind: "task",
+          task: t,
+          lane: laneOf[k],
+          lanes,
+          top: topOf(startMin(t)),
+          height: heightOf(t.duration_min ?? 30),
+        });
+      });
+    } else {
+      const minStart = startMin(cluster[0]);
+      const priority: Task["priority"] = cluster.some((t) => t.priority === "high")
+        ? "high"
+        : cluster.some((t) => t.priority === "medium")
+          ? "medium"
+          : "low";
+      items.push({
+        kind: "more",
+        count: cluster.length,
+        label: fmtHM(minStart),
+        priority,
+        top: topOf(minStart),
+        height: heightOf(maxEnd - minStart),
+      });
+    }
+    i = j;
+  }
+  return items;
 }
 
 export function WeekGrid({
@@ -61,6 +117,7 @@ export function WeekGrid({
   onNext,
   onToday,
   onOpen,
+  onOpenDay,
 }: {
   weekStart: Date;
   week: Task[];
@@ -69,10 +126,24 @@ export function WeekGrid({
   onNext: () => void;
   onToday: () => void;
   onOpen: (id: string) => void;
+  onOpenDay?: (d: Date) => void;
 }) {
   const start = startOfWeek(weekStart, { weekStartsOn: 1 });
   const end = endOfWeek(weekStart, { weekStartsOn: 1 });
+  const startISO = start.toISOString();
   const days = useMemo(() => eachDayOfInterval({ start, end }), [start, end]);
+
+  // Canh cuộn tới cột hôm nay khi mở/đổi tuần (thấy hôm qua–nay–mai, cuộn xem thêm)
+  const boxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const idx = days.findIndex((d) => isToday(d));
+    const left = idx >= 0 ? Math.max(0, idx * COL_W - (el.clientWidth - COL_W) / 2) : 0;
+    // dùng instant vì .themed-scroll đặt scroll-behavior: smooth (gán scrollLeft trực tiếp bị chặn)
+    el.scrollTo({ left, behavior: "instant" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startISO]);
 
   // Tách task cả-ngày (giờ 00:00) và task có giờ
   const allDay = week.filter((t) => startMin(t) === 0);
@@ -137,7 +208,10 @@ export function WeekGrid({
         Timetable: khung cuộn 2 chiều GỌN TRONG BOX (max-h) — không tràn ra trang,
         không đẩy bottom nav. Header ngày dính trên, trục giờ dính trái khi cuộn.
       */}
-      <div className="themed-scroll relative max-h-[65vh] overflow-auto overscroll-contain rounded-xl border border-border">
+      <div
+        ref={boxRef}
+        className="themed-scroll relative max-h-[65vh] overflow-auto overscroll-contain rounded-xl border border-border"
+      >
         <div style={{ width: totalW }}>
           {/* ===== Header dính (ngày + cả ngày) ===== */}
           <div className="sticky top-0 z-30 border-b border-border bg-background">
@@ -216,7 +290,7 @@ export function WeekGrid({
             {/* Cột ngày */}
             {days.map((d) => {
               const dayTasks = timed.filter((t) => isSameDay(new Date(t.due_date), d));
-              const { placed, lanes } = packLanes(dayTasks);
+              const items = layoutDay(dayTasks, startHour);
               return (
                 <div
                   key={d.toISOString()}
@@ -227,14 +301,28 @@ export function WeekGrid({
                   {hours.map((h) => (
                     <div key={h} className="border-t border-border/40" style={{ height: HOUR_PX }} />
                   ))}
-                  {/* Block task */}
-                  {placed.map(({ task: t, lane }) => {
-                    const s = startMin(t);
-                    const top = ((s - startHour * 60) / 60) * HOUR_PX;
-                    const height = Math.max(((t.duration_min ?? 30) / 60) * HOUR_PX, MIN_BLOCK_PX);
-                    const w = 100 / lanes;
-                    const showTime = height >= 34; // đủ chỗ mới hiện dòng giờ
-                    const titleLines = height >= 52 ? "line-clamp-2" : "truncate";
+                  {/* Block task + khối gộp */}
+                  {items.map((it, idx) => {
+                    if (it.kind === "more") {
+                      return (
+                        <button
+                          key={`more-${idx}`}
+                          onClick={() => onOpenDay?.(d)}
+                          className={cn(
+                            "active-press absolute inset-x-0.5 flex flex-col justify-center overflow-hidden rounded-md border border-l-2 border-dashed border-primary/60 bg-primary/10 px-1.5 py-1 text-left leading-tight",
+                            priorityBar[it.priority],
+                          )}
+                          style={{ top: it.top, height: it.height }}
+                        >
+                          <span className="text-[11px] font-semibold text-primary">{it.count} việc</span>
+                          <span className="text-[9px] text-primary/80 tabular-nums">từ {it.label} · xem</span>
+                        </button>
+                      );
+                    }
+                    const t = it.task;
+                    const w = 100 / it.lanes;
+                    const showTime = it.height >= 34;
+                    const titleLines = it.height >= 52 ? "line-clamp-2" : "truncate";
                     return (
                       <button
                         key={t.id}
@@ -245,9 +333,9 @@ export function WeekGrid({
                           t.is_completed && "opacity-50",
                         )}
                         style={{
-                          top,
-                          height,
-                          left: `calc(${lane * w}% + 1px)`,
+                          top: it.top,
+                          height: it.height,
+                          left: `calc(${it.lane * w}% + 1px)`,
                           width: `calc(${w}% - 2px)`,
                         }}
                       >
@@ -258,11 +346,7 @@ export function WeekGrid({
                           </span>
                         )}
                         <span
-                          className={cn(
-                            "text-[11px] font-medium",
-                            titleLines,
-                            t.is_completed && "line-through",
-                          )}
+                          className={cn("text-[11px] font-medium", titleLines, t.is_completed && "line-through")}
                         >
                           {t.title}
                         </span>
@@ -277,7 +361,7 @@ export function WeekGrid({
       </div>
 
       <p className="px-1 text-center text-[11px] text-muted-foreground">
-        Cuộn ngang/dọc trong khung để xem cả tuần · chạm ô để mở
+        Cuộn trong khung để xem cả tuần · ô “N việc” = nhiều việc trùng giờ, chạm để mở ngày
       </p>
 
       {week.length === 0 && carryover.length === 0 && (
