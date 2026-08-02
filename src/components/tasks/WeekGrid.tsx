@@ -17,10 +17,10 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { Task } from "@/types";
 
-const HOUR_PX = 56; // cao mỗi giờ
-const COL_W = 88; // rộng mỗi cột ngày
+const HOUR_PX = 60; // cao mỗi giờ
+const COL_W = 116; // rộng mỗi cột ngày (đủ đọc tên task)
 const AXIS_W = 44; // rộng cột trục giờ
-const MIN_BLOCK_PX = 22;
+const MIN_BLOCK_PX = 26;
 
 const priorityBar: Record<string, string> = {
   high: "border-l-rose-500",
@@ -137,7 +137,7 @@ export function WeekGrid({
         Timetable: khung cuộn 2 chiều GỌN TRONG BOX (max-h) — không tràn ra trang,
         không đẩy bottom nav. Header ngày dính trên, trục giờ dính trái khi cuộn.
       */}
-      <div className="relative max-h-[65vh] overflow-auto overscroll-contain rounded-xl border border-border">
+      <div className="themed-scroll relative max-h-[65vh] overflow-auto overscroll-contain rounded-xl border border-border">
         <div style={{ width: totalW }}>
           {/* ===== Header dính (ngày + cả ngày) ===== */}
           <div className="sticky top-0 z-30 border-b border-border bg-background">
@@ -233,12 +233,14 @@ export function WeekGrid({
                     const top = ((s - startHour * 60) / 60) * HOUR_PX;
                     const height = Math.max(((t.duration_min ?? 30) / 60) * HOUR_PX, MIN_BLOCK_PX);
                     const w = 100 / lanes;
+                    const showTime = height >= 34; // đủ chỗ mới hiện dòng giờ
+                    const titleLines = height >= 52 ? "line-clamp-2" : "truncate";
                     return (
                       <button
                         key={t.id}
                         onClick={() => onOpen(t.id)}
                         className={cn(
-                          "active-press absolute overflow-hidden rounded-md border border-l-2 border-border bg-card px-1 py-0.5 text-left",
+                          "active-press absolute flex flex-col overflow-hidden rounded-md border border-l-2 border-border bg-card px-1.5 py-1 text-left leading-tight",
                           priorityBar[t.priority],
                           t.is_completed && "opacity-50",
                         )}
@@ -249,15 +251,21 @@ export function WeekGrid({
                           width: `calc(${w}% - 2px)`,
                         }}
                       >
-                        <p className="text-[9px] leading-tight text-muted-foreground tabular-nums">
-                          {format(new Date(t.due_date), "HH:mm")}
-                        </p>
-                        <p className={cn("truncate text-[10px] font-medium leading-tight", t.is_completed && "line-through")}>
-                          {t.title}
-                        </p>
-                        {t.recurrence_rule && height > 40 && (
-                          <Repeat className="size-2.5 text-muted-foreground" />
+                        {showTime && (
+                          <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground tabular-nums">
+                            {format(new Date(t.due_date), "HH:mm")}
+                            {t.recurrence_rule && <Repeat className="size-2.5" />}
+                          </span>
                         )}
+                        <span
+                          className={cn(
+                            "text-[11px] font-medium",
+                            titleLines,
+                            t.is_completed && "line-through",
+                          )}
+                        >
+                          {t.title}
+                        </span>
                       </button>
                     );
                   })}

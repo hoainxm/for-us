@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { addMinutes, format, isBefore, isToday, startOfDay, endOfDay } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
@@ -37,9 +37,33 @@ type View = "list" | "timeline" | "week";
 
 export default function TasksPage() {
   const navigate = useNavigate();
+  // view + tuần lưu trong URL -> mở task rồi back không bị reset (route detail unmount trang này)
+  const [sp, setSp] = useSearchParams();
+  const view = (sp.get("view") as View) ?? "list";
+  const weekAnchor = useMemo(() => {
+    const wk = sp.get("week");
+    return wk ? startOfWeek(new Date(wk), { weekStartsOn: 1 }) : startOfWeek(new Date(), { weekStartsOn: 1 });
+  }, [sp]);
+  const setView = (v: View) =>
+    setSp(
+      (p) => {
+        const n = new URLSearchParams(p);
+        n.set("view", v);
+        return n;
+      },
+      { replace: true },
+    );
+  const setWeek = (updater: (w: Date) => Date) =>
+    setSp(
+      (p) => {
+        const n = new URLSearchParams(p);
+        n.set("week", startOfWeek(updater(weekAnchor), { weekStartsOn: 1 }).toISOString());
+        return n;
+      },
+      { replace: true },
+    );
+
   const [day, setDay] = useState<Date>(() => startOfDay(new Date()));
-  const [weekAnchor, setWeekAnchor] = useState<Date>(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
-  const [view, setView] = useState<View>("list");
   const q = useDayTasks(day);
   const wq = useWeekTasks(weekAnchor);
   const { data: profiles } = useProfiles();
@@ -94,9 +118,9 @@ export default function TasksPage() {
               weekStart={weekAnchor}
               week={wq.data.week}
               carryover={wq.data.carryover}
-              onPrev={() => setWeekAnchor((w) => addWeeks(w, -1))}
-              onNext={() => setWeekAnchor((w) => addWeeks(w, 1))}
-              onToday={() => setWeekAnchor(startOfWeek(new Date(), { weekStartsOn: 1 }))}
+              onPrev={() => setWeek((w) => addWeeks(w, -1))}
+              onNext={() => setWeek((w) => addWeeks(w, 1))}
+              onToday={() => setWeek(() => new Date())}
               onOpen={(id) => navigate(`/tasks/${id}`)}
             />
           )}
