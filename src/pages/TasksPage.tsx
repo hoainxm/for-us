@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { addMinutes, format, isBefore, isToday, startOfDay, endOfDay } from "date-fns";
+import { addDays, addMinutes, format, isBefore, isToday, startOfDay, endOfDay } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
   Repeat,
@@ -20,10 +20,9 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { SwipeableRow } from "@/components/tasks/SwipeableRow";
 import { DateStrip } from "@/components/tasks/DateStrip";
-import { WeekGrid, addWeeks } from "@/components/tasks/WeekGrid";
-import { startOfWeek } from "date-fns";
+import { WeekGrid } from "@/components/tasks/WeekGrid";
 import { cn } from "@/lib/utils";
-import { useCompleteTask, useDayTasks, useUncompleteTask, useWeekTasks } from "@/hooks/useTasks";
+import { useCompleteTask, useDayTasks, useRangeTasks, useUncompleteTask } from "@/hooks/useTasks";
 import { useProfiles } from "@/hooks/useProfile";
 import type { Task } from "@/types";
 
@@ -35,15 +34,37 @@ const recurrenceLabel: Record<string, string> = {
 
 type View = "list" | "timeline" | "week";
 
+// Số ngày/cụm theo bề ngang: 3 mobile / 5 tablet / 7 desktop
+function useVisibleCount() {
+  const get = () => {
+    if (typeof window === "undefined") return 3;
+    const w = window.innerWidth;
+    return w >= 1024 ? 7 : w >= 768 ? 5 : 3;
+  };
+  const [n, setN] = useState(get);
+  useEffect(() => {
+    const on = () => setN(get());
+    window.addEventListener("resize", on);
+    return () => window.removeEventListener("resize", on);
+  }, []);
+  return n;
+}
+
 export default function TasksPage() {
   const navigate = useNavigate();
-  // view + tuần lưu trong URL -> mở task rồi back không bị reset (route detail unmount trang này)
+  // view + mốc ngày lưu trong URL -> mở task rồi back giữ nguyên cụm đang xem
+  // (route chi tiết unmount trang này nên state cục bộ sẽ mất)
   const [sp, setSp] = useSearchParams();
   const view = (sp.get("view") as View) ?? "list";
-  const weekAnchor = useMemo(() => {
-    const wk = sp.get("week");
-    return wk ? startOfWeek(new Date(wk), { weekStartsOn: 1 }) : startOfWeek(new Date(), { weekStartsOn: 1 });
-  }, [sp]);
+  const visibleCount = useVisibleCount();
+  const anchor = useMemo(() => {
+    const a = sp.get("anchor");
+    return a ? startOfDay(new Date(a)) : startOfDay(addDays(new Date(), -Math.floor(visibleCount / 2)));
+  }, [sp, visibleCount]);
+  const visibleDays = useMemo(
+    () => Array.from({ length: visibleCount }, (_, i) => addDays(anchor, i)),
+    [anchor, visibleCount],
+  );
   const setView = (v: View) =>
     setSp(
       (p) => {
@@ -53,11 +74,11 @@ export default function TasksPage() {
       },
       { replace: true },
     );
-  const setWeek = (updater: (w: Date) => Date) =>
+  const setAnchor = (d: Date) =>
     setSp(
       (p) => {
         const n = new URLSearchParams(p);
-        n.set("week", startOfWeek(updater(weekAnchor), { weekStartsOn: 1 }).toISOString());
+        n.set("anchor", startOfDay(d).toISOString());
         return n;
       },
       { replace: true },
@@ -65,7 +86,7 @@ export default function TasksPage() {
 
   const [day, setDay] = useState<Date>(() => startOfDay(new Date()));
   const q = useDayTasks(day);
-  const wq = useWeekTasks(weekAnchor);
+  const wq = useRangeTasks(anchor, visibleDays[visibleDays.length - 1]);
   const { data: profiles } = useProfiles();
   const complete = useCompleteTask();
   const uncomplete = useUncompleteTask();
@@ -115,12 +136,12 @@ export default function TasksPage() {
           {wq.isError && <ErrorBox message={(wq.error as Error).message} onRetry={() => wq.refetch()} />}
           {wq.data && (
             <WeekGrid
-              weekStart={weekAnchor}
-              week={wq.data.week}
+              days={visibleDays}
+              tasks={wq.data.range}
               carryover={wq.data.carryover}
-              onPrev={() => setWeek((w) => addWeeks(w, -1))}
-              onNext={() => setWeek((w) => addWeeks(w, 1))}
-              onToday={() => setWeek(() => new Date())}
+              onPrev={() => setAnchor(addDays(anchor, -visibleCount))}
+              onNext={() => setAnchor(addDays(anchor, visibleCount))}
+              onToday={() => setAnchor(addDays(startOfDay(new Date()), -Math.floor(visibleCount / 2)))}
               onOpen={(id) => navigate(`/tasks/${id}`)}
               onOpenDay={(d) => {
                 setDay(startOfDay(d));

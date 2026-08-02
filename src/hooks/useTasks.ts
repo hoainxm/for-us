@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { addDays, addMonths, addWeeks, endOfDay, endOfWeek, isAfter, startOfDay, startOfWeek } from "date-fns";
+import { addDays, addMonths, addWeeks, endOfDay, isAfter, startOfDay } from "date-fns";
 import { supabase } from "@/lib/supabase";
 import type { RecurrenceRule, Task } from "@/types";
 
@@ -54,20 +54,20 @@ export function useDayTasks(day: Date) {
   });
 }
 
-// Xem theo TUẦN (thời khóa biểu, tuần bắt đầu Thứ 2):
-//  - week: mọi task (done + chưa) có due_date rơi trong tuần đang xem
-//  - carryover: chưa xong AND due_date < đầu tuần (trôi từ tuần trước)
+// Xem theo CỤM NGÀY (lịch dạng N ngày):
+//  - range: mọi task (done + chưa) có due_date trong [startDay, endDay]
+//  - carryover: chưa xong AND due_date < startDay (trôi từ trước)
 // Chỉ đọc, không đụng data cũ.
-export function useWeekTasks(weekStart: Date) {
-  const start = startOfWeek(weekStart, { weekStartsOn: 1 });
-  const end = endOfWeek(weekStart, { weekStartsOn: 1 });
+export function useRangeTasks(startDay: Date, endDay: Date) {
+  const s = startOfDay(startDay);
+  const e = endOfDay(endDay);
   return useQuery({
-    queryKey: ["tasks", "week", start.toISOString()],
-    queryFn: async (): Promise<{ week: Task[]; carryover: Task[] }> => {
-      const startISO = startOfDay(start).toISOString();
-      const endISO = endOfDay(end).toISOString();
+    queryKey: ["tasks", "range", s.toISOString(), e.toISOString()],
+    queryFn: async (): Promise<{ range: Task[]; carryover: Task[] }> => {
+      const startISO = s.toISOString();
+      const endISO = e.toISOString();
 
-      const [weekRes, carryRes] = await Promise.all([
+      const [rangeRes, carryRes] = await Promise.all([
         supabase
           .from("tasks")
           .select(TASK_COLS_WITH_COUNT)
@@ -81,10 +81,10 @@ export function useWeekTasks(weekStart: Date) {
           .lt("due_date", startISO)
           .order("due_date", { ascending: true }),
       ]);
-      if (weekRes.error) throw weekRes.error;
+      if (rangeRes.error) throw rangeRes.error;
       if (carryRes.error) throw carryRes.error;
       return {
-        week: (weekRes.data ?? []).map(mapCount),
+        range: (rangeRes.data ?? []).map(mapCount),
         carryover: (carryRes.data ?? []).map(mapCount),
       };
     },
