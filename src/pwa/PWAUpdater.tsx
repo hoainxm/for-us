@@ -29,20 +29,12 @@ export function PWAUpdater() {
     }
   }, [offlineReady, setOfflineReady]);
 
+  // Có bản mới -> tự cập nhật luôn, không hỏi. Báo thành công sau khi reload.
   useEffect(() => {
     if (!needRefresh) return;
-    notify.info("Có bản cập nhật mới", {
-      duration: Infinity,
-      description: "Tải lại để dùng bản mới nhất, phiên đăng nhập vẫn giữ nguyên.",
-      action: {
-        label: "Cập nhật",
-        onClick: () => {
-          localStorage.setItem(UPDATED_FLAG, "1");
-          updateServiceWorker(true); // kích hoạt SW mới + reload
-        },
-      },
-      onDismiss: () => setNeedRefresh(false),
-    });
+    setNeedRefresh(false);
+    localStorage.setItem(UPDATED_FLAG, "1");
+    updateServiceWorker(true); // kích hoạt SW mới + reload
   }, [needRefresh, setNeedRefresh, updateServiceWorker]);
 
   return null;
