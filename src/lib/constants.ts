@@ -28,7 +28,16 @@ export const EXPENSE_CATEGORY_GROUPS: readonly CategoryGroup[] = [
   { group: "Đi lại", items: ["Di chuyển", "Xăng xe", "Gửi xe"] },
   {
     group: "Cá nhân",
-    items: ["Mua sắm", "Quần áo", "Sức khỏe", "Làm đẹp", "Học tập", "Thể thao", "Đăng ký / Thuê bao"],
+    items: [
+      "Mua sắm",
+      "Quần áo",
+      "Sức khỏe",
+      "Làm đẹp",
+      "Học tập",
+      "Thể thao",
+      "Giải trí",
+      "Đăng ký / Thuê bao",
+    ],
   },
   {
     group: "Tình yêu & gia đình",
@@ -36,7 +45,16 @@ export const EXPENSE_CATEGORY_GROUPS: readonly CategoryGroup[] = [
   },
   {
     group: "Tài chính & khác",
-    items: ["Tiết kiệm", "Đầu tư", "Bảo hiểm", "Trả nợ", "Từ thiện", "Phí dịch vụ", "Khác"],
+    items: [
+      "Tiết kiệm",
+      "Đầu tư",
+      "Bảo hiểm",
+      "Trả nợ",
+      "Từ thiện",
+      "Giấy tờ / Thủ tục",
+      "Phí dịch vụ",
+      "Khác",
+    ],
   },
 ] as const;
 
@@ -90,6 +108,7 @@ export const CATEGORY_EMOJI: Record<string, string> = {
   "Làm đẹp": "💅",
   "Học tập": "📚",
   "Thể thao": "🏋️",
+  "Giải trí": "🎬",
   "Đăng ký / Thuê bao": "📺",
   // Chi — tình yêu & gia đình
   "Hẹn hò": "💑",
@@ -104,6 +123,7 @@ export const CATEGORY_EMOJI: Record<string, string> = {
   "Bảo hiểm": "🛡️",
   "Trả nợ": "💳",
   "Từ thiện": "🤝",
+  "Giấy tờ / Thủ tục": "📄",
   "Phí dịch vụ": "🏦",
   Khác: "✨",
   // Thu

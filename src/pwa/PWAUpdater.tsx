@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { notify } from "@/lib/toast";
-import { supabase } from "@/lib/supabase";
+
+// Cờ đặt trước khi reload, đọc lại sau khi bản mới chạy để báo thành công.
+const UPDATED_FLAG = "pwa-updated";
 
 // Đăng ký Service Worker + nhắc cập nhật khi có bản mới (registerType: "prompt").
 export function PWAUpdater() {
@@ -10,6 +12,15 @@ export function PWAUpdater() {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW();
+
+  // Vừa reload xong sau khi cập nhật -> báo thành công.
+  useEffect(() => {
+    if (localStorage.getItem(UPDATED_FLAG) !== "1") return;
+    localStorage.removeItem(UPDATED_FLAG);
+    notify.success("Đã cập nhật bản mới nhất 🎉", {
+      description: "App đang chạy phiên bản mới, không cần đăng nhập lại.",
+    });
+  }, []);
 
   useEffect(() => {
     if (offlineReady) {
@@ -20,19 +31,16 @@ export function PWAUpdater() {
 
   useEffect(() => {
     if (!needRefresh) return;
-    // Bản mới -> đăng xuất rồi reload để test lại luồng đăng nhập mỗi lần cập nhật.
-    const applyUpdate = async () => {
-      try {
-        await supabase.auth.signOut();
-      } catch {
-        // kệ, vẫn cập nhật
-      }
-      updateServiceWorker(true); // kích hoạt SW mới + reload
-    };
     notify.info("Có bản cập nhật mới", {
       duration: Infinity,
-      description: "Cập nhật sẽ đăng xuất để đăng nhập lại.",
-      action: { label: "Cập nhật", onClick: applyUpdate },
+      description: "Tải lại để dùng bản mới nhất, phiên đăng nhập vẫn giữ nguyên.",
+      action: {
+        label: "Cập nhật",
+        onClick: () => {
+          localStorage.setItem(UPDATED_FLAG, "1");
+          updateServiceWorker(true); // kích hoạt SW mới + reload
+        },
+      },
       onDismiss: () => setNeedRefresh(false),
     });
   }, [needRefresh, setNeedRefresh, updateServiceWorker]);
