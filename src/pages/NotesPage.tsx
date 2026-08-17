@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { MessageCircle, ImageIcon } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -62,7 +62,7 @@ export default function NotesPage() {
       ?.find((i) => i.type === "reaction" && i.author_id === user.id && i.value === emoji);
     toggleReaction.mutate(
       { noteId, authorId: user.id, emoji, existingId: mine?.id },
-      { onError: (e) => toast.error("Lỗi", { description: (e as Error).message }) },
+      { onError: (e) => notify.error("Lỗi", { description: (e as Error).message }) },
     );
   };
 

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 import { supabase } from "@/lib/supabase";
 
 // Đăng ký Service Worker + nhắc cập nhật khi có bản mới (registerType: "prompt").
@@ -13,7 +13,7 @@ export function PWAUpdater() {
 
   useEffect(() => {
     if (offlineReady) {
-      toast.success("Đã sẵn sàng dùng offline");
+      notify.success("Đã sẵn sàng dùng offline");
       setOfflineReady(false);
     }
   }, [offlineReady, setOfflineReady]);
@@ -29,7 +29,7 @@ export function PWAUpdater() {
       }
       updateServiceWorker(true); // kích hoạt SW mới + reload
     };
-    toast("Có bản cập nhật mới", {
+    notify.info("Có bản cập nhật mới", {
       duration: Infinity,
       description: "Cập nhật sẽ đăng xuất để đăng nhập lại.",
       action: { label: "Cập nhật", onClick: applyUpdate },

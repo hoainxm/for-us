@@ -10,7 +10,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useProfiles } from "@/hooks/useProfile";
-import { EXPENSE_CATEGORY_EMOJI } from "@/lib/constants";
+import { emojiOf } from "@/lib/constants";
 import type { Expense, ExpenseKind } from "@/types";
 
 const formatVnd = (n: number) => new Intl.NumberFormat("vi-VN").format(n) + "₫";
@@ -49,6 +49,18 @@ export default function ExpensesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtered]);
   const balance = income - expense;
+
+  // Chi theo danh mục trong tháng — thấy ngay tiền đi đâu nhiều nhất.
+  const byCategory = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const e of filtered) {
+      if (e.kind === "income") continue;
+      if (!isSameMonth(new Date(e.spent_date), now)) continue;
+      map.set(e.category, (map.get(e.category) ?? 0) + Number(e.amount));
+    }
+    return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered]);
 
   const groups = useMemo(() => {
     const map = new Map<string, Expense[]>();
@@ -125,6 +137,34 @@ export default function ExpensesPage() {
           </div>
         </Card>
 
+        {byCategory.length > 0 && (
+          <Card className="space-y-3 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Chi theo danh mục
+            </p>
+            <div className="space-y-2.5">
+              {byCategory.map(([cat, amt]) => (
+                <div key={cat} className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span>{emojiOf(cat)}</span>
+                    <span className="min-w-0 flex-1 truncate">{cat}</span>
+                    <span className="shrink-0 font-medium tabular-nums">{formatVnd(amt)}</span>
+                    <span className="w-9 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+                      {expense > 0 ? Math.round((amt / expense) * 100) : 0}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
+                    <div
+                      className="h-full rounded-full bg-primary/70"
+                      style={{ width: `${expense > 0 ? (amt / expense) * 100 : 0}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
         {isLoading && (
           <div className="space-y-3">
             {[0, 1, 2].map((i) => (
@@ -178,7 +218,7 @@ export default function ExpensesPage() {
                       className="active-press flex w-full items-center gap-3 p-3 text-left"
                     >
                       <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-lg">
-                        {isIncome ? "💰" : EXPENSE_CATEGORY_EMOJI[e.category] ?? "✨"}
+                        {emojiOf(e.category, e.kind)}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="font-medium">{e.category}</p>

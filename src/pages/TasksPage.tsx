@@ -25,7 +25,7 @@ import {
   CalendarClock,
   CalendarDays,
 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -114,10 +114,10 @@ export default function TasksPage() {
   const onComplete = (task: Task) =>
     complete.mutate(task, {
       onSuccess: ({ spawned }) =>
-        toast.success("Đã xong! 🎉", {
+        notify.success("Đã xong! 🎉", {
           description: spawned ? "Đã tạo lượt lặp lại tiếp theo" : undefined,
         }),
-      onError: (e) => toast.error("Lỗi", { description: (e as Error).message }),
+      onError: (e) => notify.error("Lỗi", { description: (e as Error).message }),
     });
 
   const todo = q.data?.todo ?? [];

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { differenceInCalendarDays, format, formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { ArrowLeft, ImagePlus, Loader2, Send, Trash2, X } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/AuthProvider";
 import { useProfiles } from "@/hooks/useProfile";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useEvent, useDeleteEvent } from "@/hooks/useEvents";
 import { useCreateEventPost, useEventPosts } from "@/hooks/useEventPosts";
 import { useRealtimeInvalidate } from "@/hooks/useRealtime";
@@ -49,7 +50,7 @@ export default function EventDetailPage() {
   const onPickFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(e.target.files ?? []);
     if (picked.some((f) => f.size > 5 * 1024 * 1024)) {
-      toast.error("Mỗi ảnh tối đa 5MB");
+      notify.error("Mỗi ảnh tối đa 5MB");
       return;
     }
     setFiles((p) => [...p, ...picked].slice(0, 10));
@@ -58,28 +59,34 @@ export default function EventDetailPage() {
 
   const submit = () => {
     if (!user || !id) return;
-    if (!content.trim() && files.length === 0) return toast.error("Viết gì đó hoặc thêm ảnh");
+    if (!content.trim() && files.length === 0) return notify.error("Viết gì đó hoặc thêm ảnh");
     createPost.mutate(
       { eventId: id, authorId: user.id, content: content.trim(), files },
       {
         onSuccess: () => {
           setContent("");
           setFiles([]);
-          toast.success("Đã đăng");
+          notify.success("Đã đăng");
         },
-        onError: (e) => toast.error("Lỗi đăng", { description: (e as Error).message }),
+        onError: (e) => notify.error("Lỗi đăng", { description: (e as Error).message }),
       },
     );
   };
+
+  const [askDelete, setAskDelete] = useState(false);
 
   const removeEvent = () => {
     if (!id) return;
     deleteEvent.mutate(id, {
       onSuccess: () => {
-        toast.success("Đã xoá sự kiện");
+        setAskDelete(false);
+        notify.success("Đã xoá sự kiện");
         navigate("/events");
       },
-      onError: (e) => toast.error("Lỗi xoá", { description: (e as Error).message }),
+      onError: (e) => {
+        setAskDelete(false);
+        notify.error("Lỗi xoá", { description: (e as Error).message });
+      },
     });
   };
 
@@ -93,7 +100,11 @@ export default function EventDetailPage() {
           <ArrowLeft className="size-6" />
         </button>
         <h1 className="flex-1 truncate font-semibold">{ev?.title ?? "Sự kiện"}</h1>
-        <button onClick={removeEvent} aria-label="Xoá" className="active-press text-destructive">
+        <button
+          onClick={() => setAskDelete(true)}
+          aria-label="Xoá"
+          className="active-press text-destructive"
+        >
           <Trash2 className="size-5" />
         </button>
       </header>
@@ -201,6 +212,16 @@ export default function EventDetailPage() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={askDelete}
+        title="Xoá sự kiện này?"
+        description={`${ev?.title ?? "Sự kiện"} và toàn bộ kỷ niệm đã đăng sẽ mất, không khôi phục lại được.`}
+        confirmLabel="Xoá"
+        loading={deleteEvent.isPending}
+        onConfirm={removeEvent}
+        onCancel={() => setAskDelete(false)}
+      />
     </div>
   );
 }

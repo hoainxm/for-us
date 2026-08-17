@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,14 +15,14 @@ export default function ChangePasswordPage() {
   const [confirm, setConfirm] = useState("");
 
   const submit = () => {
-    if (pw.length < 6) return toast.error("Mật khẩu tối thiểu 6 ký tự");
-    if (pw !== confirm) return toast.error("Mật khẩu nhập lại không khớp");
+    if (pw.length < 6) return notify.error("Mật khẩu tối thiểu 6 ký tự");
+    if (pw !== confirm) return notify.error("Mật khẩu nhập lại không khớp");
     change.mutate(pw, {
       onSuccess: () => {
-        toast.success("Đã đổi mật khẩu");
+        notify.success("Đã đổi mật khẩu");
         navigate(-1);
       },
-      onError: (e) => toast.error("Lỗi đổi mật khẩu", { description: (e as Error).message }),
+      onError: (e) => notify.error("Lỗi đổi mật khẩu", { description: (e as Error).message }),
     });
   };
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 import { Heart, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -28,13 +28,13 @@ export default function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword(values);
       if (error) {
-        toast.error("Đăng nhập thất bại", { description: error.message });
+        notify.error("Đăng nhập thất bại", { description: error.message });
         return;
       }
-      toast.success("Chào mừng trở lại 💕");
+      notify.success("Chào mừng trở lại 💕");
       // AuthProvider onAuthStateChange sẽ tự chuyển màn.
     } catch {
-      toast.error("Lỗi mạng, thử lại nha");
+      notify.error("Lỗi mạng, thử lại nha");
     } finally {
       setSubmitting(false);
     }

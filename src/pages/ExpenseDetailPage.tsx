@@ -1,8 +1,9 @@
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
@@ -10,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useExpense, useDeleteExpense } from "@/hooks/useExpenses";
 import { useProfiles } from "@/hooks/useProfile";
-import { EXPENSE_CATEGORY_EMOJI } from "@/lib/constants";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { emojiOf } from "@/lib/constants";
 
 const formatVnd = (n: number) => new Intl.NumberFormat("vi-VN").format(n) + "₫";
 
@@ -23,14 +25,20 @@ export default function ExpenseDetailPage() {
   const payer = e?.paid_by ? profiles?.find((p) => p.id === e.paid_by) : undefined;
   const isIncome = e?.kind === "income";
 
+  const [askDelete, setAskDelete] = useState(false);
+
   const remove = () => {
     if (!id) return;
     del.mutate(id, {
       onSuccess: () => {
-        toast.success("Đã xoá");
+        setAskDelete(false);
+        notify.success(isIncome ? "Đã xoá khoản thu" : "Đã xoá khoản chi");
         navigate("/expenses");
       },
-      onError: (err) => toast.error("Xoá lỗi", { description: (err as Error).message }),
+      onError: (err) => {
+        setAskDelete(false);
+        notify.error("Xoá lỗi", { description: (err as Error).message });
+      },
     });
   };
 
@@ -52,7 +60,7 @@ export default function ExpenseDetailPage() {
           <>
             <Card className="flex flex-col items-center gap-2 p-6 text-center">
               <div className="flex size-14 items-center justify-center rounded-full bg-secondary text-2xl">
-                {isIncome ? "💰" : EXPENSE_CATEGORY_EMOJI[e.category] ?? "✨"}
+                {emojiOf(e.category, e.kind)}
               </div>
               <Badge variant={isIncome ? "low" : "high"}>{isIncome ? "Khoản thu" : "Khoản chi"}</Badge>
               <p
@@ -89,10 +97,25 @@ export default function ExpenseDetailPage() {
               )}
             </Card>
 
-            <Button variant="outline" className="w-full text-destructive" onClick={remove} disabled={del.isPending}>
+            <Button
+              variant="outline"
+              className="w-full text-destructive"
+              onClick={() => setAskDelete(true)}
+              disabled={del.isPending}
+            >
               {del.isPending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
               Xoá khoản này
             </Button>
+
+            <ConfirmDialog
+              open={askDelete}
+              title={isIncome ? "Xoá khoản thu này?" : "Xoá khoản chi này?"}
+              description={`${e.category} · ${formatVnd(Number(e.amount))}. Xoá rồi không khôi phục lại được.`}
+              confirmLabel="Xoá"
+              loading={del.isPending}
+              onConfirm={remove}
+              onCancel={() => setAskDelete(false)}
+            />
           </>
         )}
       </div>

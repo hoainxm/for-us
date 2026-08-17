@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 import {
   CheckSquare,
   NotebookPen,
@@ -26,10 +26,13 @@ import { useCreateExpense } from "@/hooks/useExpenses";
 import { usePush } from "@/hooks/usePush";
 import type { ExpenseKind } from "@/types";
 import {
+  CATEGORY_EMOJI,
   EVENT_CATEGORIES,
   EXPENSE_CATEGORIES,
+  INCOME_CATEGORIES,
   NOTE_IMAGE_LIMIT,
   TASK_TAGS,
+  categoryGroupsFor,
 } from "@/lib/constants";
 import type { EventType, RecurrenceRule } from "@/types";
 
@@ -113,6 +116,13 @@ export default function CreatePage() {
   const effectiveAssignee = assignee ?? user?.id ?? "";
   const effectivePayer = paidBy ?? user?.id ?? null;
 
+  // Thu và chi có bộ danh mục riêng — đổi loại thì chọn lại danh mục mặc định.
+  const switchKind = (next: ExpenseKind) => {
+    if (next === kind) return;
+    setKind(next);
+    setExpenseCategory(next === "income" ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0]);
+  };
+
   // Lịch (từ giờ → đến giờ): tính thời lượng từ giờ bắt đầu (due) tới endTime.
   const startMinutes = (() => {
     const d = new Date(due);
@@ -139,7 +149,7 @@ export default function CreatePage() {
   const onPickFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(e.target.files ?? []);
     if (picked.some((f) => f.size > 5 * 1024 * 1024)) {
-      toast.error("Mỗi ảnh tối đa 5MB");
+      notify.error("Mỗi ảnh tối đa 5MB");
       return;
     }
     setFiles((prev) => [...prev, ...picked].slice(0, NOTE_IMAGE_LIMIT));
@@ -153,9 +163,9 @@ export default function CreatePage() {
       onSuccess: (album) => {
         setAlbumId(album.id);
         setNewAlbum("");
-        toast.success("Đã tạo album");
+        notify.success("Đã tạo album");
       },
-      onError: (e) => toast.error("Lỗi tạo album", { description: (e as Error).message }),
+      onError: (e) => notify.error("Lỗi tạo album", { description: (e as Error).message }),
     });
   };
 
@@ -163,9 +173,9 @@ export default function CreatePage() {
     if (!user) return;
 
     if (mode === "task") {
-      if (!text.trim()) return toast.error("Nhập tên việc đã nha");
+      if (!text.trim()) return notify.error("Nhập tên việc đã nha");
       if (endTime && rangeDuration === null)
-        return toast.error("Giờ kết thúc phải sau giờ bắt đầu");
+        return notify.error("Giờ kết thúc phải sau giờ bắt đầu");
       createTask.mutate(
         {
           title: text.trim(),
@@ -178,23 +188,23 @@ export default function CreatePage() {
         },
         {
           onSuccess: () => {
-            toast.success("Đã tạo việc ✅");
+            notify.success("Đã tạo việc ✅");
             push.notify(effectiveAssignee, { title: "Việc mới 📋", body: text.trim(), url: "/tasks" });
             navigate("/tasks");
           },
-          onError: (e) => toast.error("Lỗi", { description: (e as Error).message }),
+          onError: (e) => notify.error("Lỗi", { description: (e as Error).message }),
         },
       );
       return;
     }
 
     if (mode === "note") {
-      if (!text.trim() && files.length === 0) return toast.error("Viết gì đó hoặc thêm ảnh nha");
+      if (!text.trim() && files.length === 0) return notify.error("Viết gì đó hoặc thêm ảnh nha");
       createNote.mutate(
         { content: text.trim(), albumId, files, authorId: user.id },
         {
           onSuccess: () => {
-            toast.success("Đã đăng nhật ký 💕");
+            notify.success("Đã đăng nhật ký 💕");
             push.notify(push.partnerId, {
               title: "Nhật ký mới 💕",
               body: text.trim() || "Vừa đăng ảnh mới",
@@ -202,14 +212,14 @@ export default function CreatePage() {
             });
             navigate("/notes");
           },
-          onError: (e) => toast.error("Lỗi đăng", { description: (e as Error).message }),
+          onError: (e) => notify.error("Lỗi đăng", { description: (e as Error).message }),
         },
       );
       return;
     }
 
     if (mode === "event") {
-      if (!text.trim()) return toast.error("Nhập tên sự kiện");
+      if (!text.trim()) return notify.error("Nhập tên sự kiện");
       createEvent.mutate(
         { title: text.trim(), event_date: eventDate, type: eventType, category: eventCategory },
         {
@@ -224,15 +234,15 @@ export default function CreatePage() {
                   files,
                 });
               } catch (e) {
-                toast.error("Sự kiện đã tạo nhưng ảnh lỗi", {
+                notify.error("Sự kiện đã tạo nhưng ảnh lỗi", {
                   description: (e as Error).message,
                 });
               }
             }
-            toast.success("Đã thêm sự kiện 💗");
+            notify.success("Đã thêm sự kiện 💗");
             navigate(`/events/${eventId}`);
           },
-          onError: (e) => toast.error("Lỗi", { description: (e as Error).message }),
+          onError: (e) => notify.error("Lỗi", { description: (e as Error).message }),
         },
       );
       return;
@@ -240,7 +250,7 @@ export default function CreatePage() {
 
     // expense
     const value = Number(amount.replace(/[^\d]/g, ""));
-    if (!value) return toast.error("Nhập số tiền");
+    if (!value) return notify.error("Nhập số tiền");
     createExpense.mutate(
       {
         amount: value,
@@ -252,10 +262,10 @@ export default function CreatePage() {
       },
       {
         onSuccess: () => {
-          toast.success("Đã ghi chi tiêu 💸");
+          notify.success("Đã ghi chi tiêu 💸");
           navigate("/expenses");
         },
-        onError: (e) => toast.error("Lỗi", { description: (e as Error).message }),
+        onError: (e) => notify.error("Lỗi", { description: (e as Error).message }),
       },
     );
   };
@@ -538,7 +548,7 @@ export default function CreatePage() {
           <Card className="space-y-4 p-4">
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => setKind("expense")}
+                onClick={() => switchKind("expense")}
                 className={cn(
                   "active-press rounded-xl border-2 py-2.5 text-sm font-semibold transition-colors",
                   kind === "expense"
@@ -549,7 +559,7 @@ export default function CreatePage() {
                 − Chi
               </button>
               <button
-                onClick={() => setKind("income")}
+                onClick={() => switchKind("income")}
                 className={cn(
                   "active-press rounded-xl border-2 py-2.5 text-sm font-semibold transition-colors",
                   kind === "income"
@@ -570,11 +580,25 @@ export default function CreatePage() {
               />
             </Field>
             <Field label="Danh mục">
-              <div className="flex flex-wrap gap-2">
-                {EXPENSE_CATEGORIES.map((c) => (
-                  <Chip key={c} active={expenseCategory === c} onClick={() => setExpenseCategory(c)}>
-                    {c}
-                  </Chip>
+              <div className="space-y-3">
+                {categoryGroupsFor(kind).map((g) => (
+                  <div key={g.group} className="space-y-1.5">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/80">
+                      {g.group}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {g.items.map((c) => (
+                        <Chip
+                          key={c}
+                          active={expenseCategory === c}
+                          onClick={() => setExpenseCategory(c)}
+                        >
+                          <span className="mr-1">{CATEGORY_EMOJI[c] ?? "✨"}</span>
+                          {c}
+                        </Chip>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </Field>

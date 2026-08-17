@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { format, formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { ArrowLeft, Loader2, Send } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
@@ -84,7 +84,7 @@ export default function NoteDetailPage() {
             url: `/notes/${id}`,
           });
         },
-        onError: (e) => toast.error("Không gửi được", { description: (e as Error).message }),
+        onError: (e) => notify.error("Không gửi được", { description: (e as Error).message }),
       },
     );
   };

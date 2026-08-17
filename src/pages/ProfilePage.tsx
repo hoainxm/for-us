@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 import {
   Bell,
   Cake,
@@ -61,8 +61,8 @@ export default function ProfilePage() {
     updateBirthday.mutate(
       { birthday: value, displayName: me?.display_name || "Bạn" },
       {
-        onSuccess: () => toast.success("Đã lưu ngày sinh + tạo sự kiện sinh nhật 🎂"),
-        onError: (e) => toast.error("Lỗi lưu", { description: (e as Error).message }),
+        onSuccess: () => notify.success("Đã lưu ngày sinh + tạo sự kiện sinh nhật 🎂"),
+        onError: (e) => notify.error("Lỗi lưu", { description: (e as Error).message }),
       },
     );
   };
@@ -75,15 +75,15 @@ export default function ProfilePage() {
   const saveName = () => {
     const v = nameDraft.trim();
     if (!v) {
-      toast.error("Tên không được để trống");
+      notify.error("Tên không được để trống");
       return;
     }
     updateName.mutate(v, {
       onSuccess: () => {
-        toast.success("Đã cập nhật tên");
+        notify.success("Đã cập nhật tên");
         setEditing(false);
       },
-      onError: (e) => toast.error("Lỗi cập nhật", { description: (e as Error).message }),
+      onError: (e) => notify.error("Lỗi cập nhật", { description: (e as Error).message }),
     });
   };
 
@@ -91,12 +91,12 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Ảnh tối đa 5MB");
+      notify.error("Ảnh tối đa 5MB");
       return;
     }
     uploadAvatar.mutate(file, {
-      onSuccess: () => toast.success("Đã đổi ảnh đại diện"),
-      onError: (err) => toast.error("Upload lỗi", { description: (err as Error).message }),
+      onSuccess: () => notify.success("Đã đổi ảnh đại diện"),
+      onError: (err) => notify.error("Upload lỗi", { description: (err as Error).message }),
     });
     e.target.value = "";
   };
@@ -104,37 +104,37 @@ export default function ProfilePage() {
   const enableNotifications = async () => {
     try {
       const r = await push.enable();
-      if (r === "unsupported") toast.error("Trình duyệt không hỗ trợ thông báo");
-      else if (r === "denied") toast.error("Bạn đã từ chối quyền thông báo");
+      if (r === "unsupported") notify.error("Trình duyệt không hỗ trợ thông báo");
+      else if (r === "denied") notify.error("Bạn đã từ chối quyền thông báo");
       else if (r === "push-unavailable")
-        toast.error("Push service không khả dụng", {
+        notify.error("Push service không khả dụng", {
           description: "Không dùng cửa sổ ẩn danh. Brave: bật Google push. Hoặc thử Chrome/Edge.",
           duration: 8000,
         });
       else if (r === "no-vapid")
-        toast.warning("Đã bật cục bộ", { description: "Chưa cấu hình VITE_VAPID_PUBLIC_KEY" });
-      else toast.success("Đã bật thông báo đẩy 🔔");
+        notify.warning("Đã bật cục bộ", { description: "Chưa cấu hình VITE_VAPID_PUBLIC_KEY" });
+      else notify.success("Đã bật thông báo đẩy 🔔");
     } catch (e) {
-      toast.error("Lỗi bật thông báo", { description: (e as Error).message });
+      notify.error("Lỗi bật thông báo", { description: (e as Error).message });
     }
   };
 
   const testPush = async () => {
     try {
       const sent = await push.test();
-      if (sent > 0) toast.success(`Đã gửi push (${sent} thiết bị)`);
+      if (sent > 0) notify.success(`Đã gửi push (${sent} thiết bị)`);
       else
-        toast.warning("Chưa có subscription", {
+        notify.warning("Chưa có subscription", {
           description: "Bấm Thông báo để bật + cấp quyền trước.",
         });
     } catch (e) {
-      toast.error("Gửi thử lỗi", { description: (e as Error).message });
+      notify.error("Gửi thử lỗi", { description: (e as Error).message });
     }
   };
 
   const onInstall = async () => {
     const outcome = await install.promptInstall();
-    if (outcome === "accepted") toast.success("Đang cài đặt ứng dụng...");
+    if (outcome === "accepted") notify.success("Đang cài đặt ứng dụng...");
   };
 
   const rows: {
@@ -310,7 +310,7 @@ export default function ProfilePage() {
           className="w-full text-destructive"
           onClick={() => {
             signOut();
-            toast("Đã đăng xuất");
+            notify.info("Đã đăng xuất");
           }}
         >
           <LogOut className="size-4" />

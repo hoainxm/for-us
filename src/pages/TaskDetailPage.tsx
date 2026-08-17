@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { format, formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { ArrowLeft, CalendarClock, Loader2, Repeat, Send } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -68,7 +68,7 @@ export default function TaskDetailPage() {
             url: `/tasks/${id}`,
           });
         },
-        onError: (e) => toast.error("Không gửi được", { description: (e as Error).message }),
+        onError: (e) => notify.error("Không gửi được", { description: (e as Error).message }),
       },
     );
   };

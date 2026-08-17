@@ -18,7 +18,12 @@ createRoot(document.getElementById("root")!).render(
         <BrowserRouter>
           <App />
           <PWAUpdater />
-          <Toaster position="top-center" richColors />
+          <Toaster
+            position="top-center"
+            offset={16}
+            gap={10}
+            toastOptions={{ unstyled: true, classNames: { toast: "w-full" } }}
+          />
         </BrowserRouter>
       </AuthProvider>
       </ThemeProvider>
