@@ -348,7 +348,15 @@ export default function CreatePage() {
                     setEndTime(e.target.value);
                     if (e.target.value) setDuration(null); // dùng khoảng giờ -> bỏ thời lượng nhanh
                   }}
-                  className="h-10 rounded-lg border border-input bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  onClick={(e) => {
+                    // Desktop: click vào ô giờ chỉ focus, gọi showPicker để bung đồng hồ chọn giờ.
+                    try {
+                      e.currentTarget.showPicker?.();
+                    } catch {
+                      /* không hỗ trợ -> vẫn gõ tay được */
+                    }
+                  }}
+                  className="h-10 cursor-pointer rounded-lg border border-input bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
                 />
                 {endTime && (
                   <Chip active={false} onClick={() => setEndTime("")}>
