@@ -6,10 +6,8 @@ import { ArrowDownLeft, ArrowUpRight, ChevronRight, Wallet } from "lucide-react"
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useExpenses } from "@/hooks/useExpenses";
-import { useProfiles } from "@/hooks/useProfile";
 import { emojiOf } from "@/lib/constants";
 import type { Expense, ExpenseKind } from "@/types";
 
@@ -20,21 +18,13 @@ type KindFilter = "all" | ExpenseKind;
 export default function ExpensesPage() {
   const navigate = useNavigate();
   const { data, isLoading, isError, error, refetch } = useExpenses();
-  const { data: profiles } = useProfiles();
-  const nameOf = (id: string | null) => (id ? profiles?.find((p) => p.id === id) : undefined);
 
-  const [personFilter, setPersonFilter] = useState<string | null>(null);
   const [kindFilter, setKindFilter] = useState<KindFilter>("all");
   const now = new Date();
 
   const filtered = useMemo(
-    () =>
-      (data ?? []).filter(
-        (e) =>
-          (!personFilter || e.paid_by === personFilter) &&
-          (kindFilter === "all" || e.kind === kindFilter),
-      ),
-    [data, personFilter, kindFilter],
+    () => (data ?? []).filter((e) => kindFilter === "all" || e.kind === kindFilter),
+    [data, kindFilter],
   );
 
   const { income, expense } = useMemo(() => {
@@ -74,22 +64,10 @@ export default function ExpensesPage() {
 
   return (
     <div>
-      <PageHeader title="Chi tiêu" subtitle="Quản lý thu chi chung" />
-
-      {/* Lọc theo người */}
-      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-1 pt-2">
-        <FilterChip active={personFilter === null} onClick={() => setPersonFilter(null)}>
-          Mọi người
-        </FilterChip>
-        {profiles?.map((p) => (
-          <FilterChip key={p.id} active={personFilter === p.id} onClick={() => setPersonFilter(p.id)}>
-            {p.display_name}
-          </FilterChip>
-        ))}
-      </div>
+      <PageHeader title="Chi tiêu" subtitle="Thu chi cá nhân của bạn" />
 
       {/* Lọc thu/chi */}
-      <div className="flex gap-2 px-4 pb-1">
+      <div className="flex gap-2 px-4 pb-1 pt-2">
         <FilterChip active={kindFilter === "all"} onClick={() => setKindFilter("all")}>
           Tất cả
         </FilterChip>
@@ -209,7 +187,6 @@ export default function ExpensesPage() {
               </div>
               <Card className="divide-y divide-border/60 p-0">
                 {items.map((e) => {
-                  const payer = nameOf(e.paid_by);
                   const isIncome = e.kind === "income";
                   return (
                     <button
@@ -226,12 +203,6 @@ export default function ExpensesPage() {
                           <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
                             {e.note}
                           </p>
-                        )}
-                        {payer && (
-                          <span className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
-                            <Avatar name={payer.display_name} src={payer.avatar_url} className="size-4" />
-                            {payer.display_name}
-                          </span>
                         )}
                       </div>
                       <span

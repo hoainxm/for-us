@@ -109,12 +109,10 @@ export default function CreatePage() {
   // expense
   const [amount, setAmount] = useState("");
   const [expenseCategory, setExpenseCategory] = useState<string>(EXPENSE_CATEGORIES[0]);
-  const [paidBy, setPaidBy] = useState<string | null>(null);
   const [spentDate, setSpentDate] = useState(todayDate);
   const [kind, setKind] = useState<ExpenseKind>("expense");
 
   const effectiveAssignee = assignee ?? user?.id ?? "";
-  const effectivePayer = paidBy ?? user?.id ?? null;
 
   // Thu và chi có bộ danh mục riêng — đổi loại thì chọn lại danh mục mặc định.
   const switchKind = (next: ExpenseKind) => {
@@ -253,10 +251,11 @@ export default function CreatePage() {
     if (!value) return notify.error("Nhập số tiền");
     createExpense.mutate(
       {
+        // Chi tiêu là RIÊNG TƯ — luôn thuộc về người đang đăng nhập.
         amount: value,
         category: expenseCategory,
         note: text.trim() || null,
-        paid_by: effectivePayer,
+        paid_by: user.id,
         spent_date: spentDate,
         kind,
       },
@@ -607,15 +606,6 @@ export default function CreatePage() {
                       ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            </Field>
-            <Field label="Người trả">
-              <div className="flex gap-2">
-                {profiles?.map((p) => (
-                  <Chip key={p.id} active={effectivePayer === p.id} onClick={() => setPaidBy(p.id)}>
-                    {p.display_name}
-                  </Chip>
                 ))}
               </div>
             </Field>

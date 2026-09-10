@@ -6,11 +6,9 @@ import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import { notify } from "@/lib/toast";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useExpense, useDeleteExpense } from "@/hooks/useExpenses";
-import { useProfiles } from "@/hooks/useProfile";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { emojiOf } from "@/lib/constants";
 
@@ -20,9 +18,7 @@ export default function ExpenseDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: e, isLoading } = useExpense(id);
-  const { data: profiles } = useProfiles();
   const del = useDeleteExpense();
-  const payer = e?.paid_by ? profiles?.find((p) => p.id === e.paid_by) : undefined;
   const isIncome = e?.kind === "income";
 
   const [askDelete, setAskDelete] = useState(false);
@@ -80,15 +76,6 @@ export default function ExpenseDetailPage() {
                 label="Ngày"
                 value={format(new Date(e.spent_date), "EEEE, dd/MM/yyyy", { locale: vi })}
               />
-              {payer && (
-                <div className="flex items-center justify-between p-4">
-                  <span className="text-sm text-muted-foreground">Người trả</span>
-                  <span className="flex items-center gap-2 text-sm font-medium">
-                    <Avatar name={payer.display_name} src={payer.avatar_url} className="size-6" />
-                    {payer.display_name}
-                  </span>
-                </div>
-              )}
               {e.note && (
                 <div className="space-y-1 p-4">
                   <span className="text-sm text-muted-foreground">Ghi chú</span>
