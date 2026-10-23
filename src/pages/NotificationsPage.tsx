@@ -4,9 +4,11 @@ import { vi } from "date-fns/locale";
 import {
   ArrowLeft,
   Bell,
+  CalendarClock,
   CheckCheck,
   CheckSquare,
   Clock,
+  Flower2,
   Heart,
   MessageCircle,
   NotebookPen,
@@ -31,6 +33,9 @@ const iconFor: Record<NotificationType, typeof Bell> = {
   reaction: Heart,
   event_post: Heart,
   reminder: Clock,
+  period_upcoming: Flower2,
+  period_due: Flower2,
+  period_late: CalendarClock,
 };
 
 export default function NotificationsPage() {

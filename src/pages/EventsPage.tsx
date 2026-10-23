@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useEvents } from "@/hooks/useEvents";
+import { CycleCard } from "@/components/cycle/CycleCard";
 import type { CoupleEvent } from "@/types";
 
 const iconForCategory = (category?: string | null, title = "") => {
@@ -33,6 +34,7 @@ export default function EventsPage() {
     <div>
       <PageHeader title="Sự kiện" subtitle="Đếm từng ngày bên nhau" />
       <div className="space-y-3 p-4">
+        <CycleCard />
         {isLoading && (
           <div className="space-y-3">
             {[0, 1, 2].map((i) => (

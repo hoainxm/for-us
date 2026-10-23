@@ -15,6 +15,7 @@ import ProfilePage from "@/pages/ProfilePage";
 import ChangePasswordPage from "@/pages/ChangePasswordPage";
 import NotificationsPage from "@/pages/NotificationsPage";
 import CreatePage from "@/pages/CreatePage";
+import CyclePage from "@/pages/CyclePage";
 
 function Splash() {
   return (
@@ -61,6 +62,7 @@ export default function App() {
       <Route path="/events/:id" element={<EventDetailPage />} />
       <Route path="/expenses/:id" element={<ExpenseDetailPage />} />
       <Route path="/change-password" element={<ChangePasswordPage />} />
+      <Route path="/cycle" element={<CyclePage />} />
 
       {/* Màn Tạo mới: full screen, không có Bottom Nav */}
       <Route

@@ -35,7 +35,10 @@ export type NotificationType =
   | "note_comment"
   | "reaction"
   | "event_post"
-  | "reminder";
+  | "reminder"
+  | "period_upcoming"
+  | "period_due"
+  | "period_late";
 
 export interface AppNotification {
   id: string;
@@ -110,4 +113,56 @@ export interface Expense {
   spent_date: string; // date
   kind: ExpenseKind;
   created_at: string;
+}
+
+// ---- Chu kỳ kinh nguyệt (ba-spec 01) ----
+export type CycleStatusKind =
+  | "not_tracking"
+  | "no_data"
+  | "in_period"
+  | "upcoming"
+  | "due_today"
+  | "overdue";
+
+export interface CycleSettings {
+  user_id: string;
+  is_tracking: boolean;
+  cycle_length: number;
+  period_length: number;
+  lead_days: number;
+  notify_enabled: boolean;
+}
+
+export interface PeriodRecord {
+  id: string;
+  start_date: string; // yyyy-MM-dd
+  end_date: string | null;
+  effective_end: string;
+  is_estimated: boolean;
+  is_open: boolean;
+}
+
+/** Kết quả hàm SQL cycle_status() — nguồn tính duy nhất cho dự đoán/thống kê. */
+export interface CycleStatus {
+  user_id: string;
+  has_settings: boolean;
+  is_tracking: boolean;
+  status: CycleStatusKind;
+  data_status: Exclude<CycleStatusKind, "not_tracking">;
+  today: string;
+  settings: Pick<CycleSettings, "cycle_length" | "period_length" | "lead_days" | "notify_enabled">;
+  last_period_id: string | null;
+  last_start: string | null;
+  cycle_day: number | null;
+  period_day: number | null;
+  next_start: string | null;
+  predicted_end: string | null;
+  days_until: number | null;
+  days_overdue: number | null;
+  avg_cycle: number;
+  avg_period: number;
+  cycles_used: number;
+  cycles_excluded: number;
+  irregular: boolean;
+  periods: PeriodRecord[];
 }

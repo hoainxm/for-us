@@ -21,12 +21,17 @@ export function DateField({
   withTime = false,
   placeholder = "Chọn ngày",
   className,
+  min,
+  max,
 }: {
   value: string;
   onChange: (v: string) => void;
   withTime?: boolean;
   placeholder?: string;
   className?: string;
+  /** Giới hạn của native picker, cùng định dạng với value. */
+  min?: string;
+  max?: string;
 }) {
   let display = placeholder;
   if (value) {
@@ -51,6 +56,8 @@ export function DateField({
       <input
         type={withTime ? "datetime-local" : "date"}
         value={value}
+        min={min}
+        max={max}
         onChange={(e) => onChange(e.target.value)}
         onClick={(e) => openPicker(e.currentTarget)}
         onKeyDown={(e) => {
